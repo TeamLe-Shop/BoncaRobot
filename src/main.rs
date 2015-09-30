@@ -23,7 +23,7 @@ fn main() {
                     // No args, probably ping
                     None => {
                         if command == "PING" {
-                            serv.send("PONG").unwrap();
+                            serv.send(Command::PONG(suffix.clone(), None)).unwrap();
                         }
                         continue;
                     }
