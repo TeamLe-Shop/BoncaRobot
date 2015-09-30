@@ -67,7 +67,7 @@ pub fn load() -> Result<Config, LoadError> {
     let mut parser = Parser::new(&buf);
     let table = match parser.parse() {
         Some(table) => table,
-        None => return Err(LoadError::from(ParserErrors(parser.errors)))
+        None => return Err(LoadError::from(ParserErrors(parser.errors))),
     };
     let mut config = Config {
         server: Some("chat.freenode.net".to_owned()),
