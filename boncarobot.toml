@@ -1,0 +1,6 @@
+[server]
+url = "chat.freenode.net"
+
+[bot]
+nick = "boncarobot"
+channels = ["##newboston"]

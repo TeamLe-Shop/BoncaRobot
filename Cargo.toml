@@ -1,0 +1,9 @@
+[package]
+name = "boncarobot"
+version = "0.1.0"
+authors = ["Mika Attila <radiantstatue@gmail.com>"]
+
+[dependencies]
+irc = "0.9.0"
+librc = { git = "https://github.com/crumblingstatue/rc.git" }
+toml = "0.1.22"
