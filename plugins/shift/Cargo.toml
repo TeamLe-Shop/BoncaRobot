@@ -1,0 +1,12 @@
+[package]
+name = "shift"
+version = "0.1.0"
+authors = ["Mika Attila <radiantstatue@gmail.com>"]
+
+[dependencies]
+pluginapi = { path = "../../pluginapi" }
+irc = "0.9.0"
+
+[lib]
+name = "shift"
+crate-type = ["dylib"]

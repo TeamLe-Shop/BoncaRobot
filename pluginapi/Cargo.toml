@@ -1,0 +1,7 @@
+[package]
+name = "pluginapi"
+version = "0.1.0"
+authors = ["Mika Attila <radiantstatue@gmail.com>"]
+
+[dependencies]
+irc = "0.9.0"

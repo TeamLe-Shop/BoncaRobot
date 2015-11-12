@@ -11,3 +11,10 @@ channels = ["#boncarobot"]
 # a space if you want a space in the prefix.
 # e.g. the prefix "kek" would be used like "keksome-command"
 command-prefix = ""
+
+[plugins.shift]
+# Optional custom path. By default, it searches in ./plugins/<name>/target/release`.
+# path = "plugins/shift/target/release/libshift.so"
+# Custom configuration for the plugin
+shl-command = "shl"
+shr-command = "shr"

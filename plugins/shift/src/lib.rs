@@ -1,3 +1,35 @@
+extern crate pluginapi;
+extern crate irc;
+use irc::client::server::utils::ServerExt;
+
+use pluginapi::{IrcServer, Plugin};
+
+struct Shifter {
+    shl_command: String,
+    shr_command: String,
+}
+
+impl Plugin for Shifter {
+    fn handle_command(&mut self, target: &str, cmd: &str, serv: &IrcServer) {
+        if cmd.starts_with(&self.shl_command) {
+            let wot = &cmd[self.shl_command.len()..];
+            serv.send_privmsg(target, &shl(wot)).unwrap();
+        }
+        if cmd.starts_with(&self.shr_command) {
+            let wot = &cmd[self.shr_command.len()..];
+            serv.send_privmsg(target, &shr(wot)).unwrap();
+        }
+    }
+}
+
+#[no_mangle]
+pub fn init(opts: &std::collections::HashMap<String, String>) -> Box<Plugin> {
+    Box::new(Shifter {
+        shl_command: opts.get("shl-command".into()).unwrap_or(&"shl ".into()).clone(),
+        shr_command: opts.get("shr-command".into()).unwrap_or(&"shr ".into()).clone(),
+    })
+}
+
 fn find_shl(seq: &[u8], c: char) -> Option<char> {
     if let Some(pos) = seq.iter().position(|b| *b == c as u8) {
         if pos > 0 {
@@ -37,11 +69,11 @@ fn driver<T: Fn(&[u8], char) -> Option<char>>(txt: &str, f: T) -> String {
        .collect()
 }
 
-pub fn shl(txt: &str) -> String {
+fn shl(txt: &str) -> String {
     driver(txt, find_shl)
 }
 
-pub fn shr(txt: &str) -> String {
+fn shr(txt: &str) -> String {
     driver(txt, find_shr)
 }
 

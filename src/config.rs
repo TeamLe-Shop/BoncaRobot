@@ -4,10 +4,17 @@ use std::io::prelude::*;
 use toml::ParserError;
 use std::error::Error;
 use std::fmt;
+use std::collections::HashMap;
+
+pub struct Plugin {
+    pub name: String,
+    pub options: HashMap<String, String>,
+}
 
 pub struct Config {
     pub irc: IrcConfig,
     pub cmd_prefix: String,
+    pub plugins: Vec<Plugin>,
 }
 
 #[derive(Debug)]
@@ -107,8 +114,30 @@ pub fn load() -> Result<Config, LoadError> {
             cmd_prefix = string.clone();
         }
     }
+    let mut plugins_vec = Vec::new();
+    if let Some(&Value::Table(ref plugins)) = table.get("plugins") {
+        for (name, plugin) in plugins {
+            if let Value::Table(ref options) = *plugin {
+                let mut options_hashmap = HashMap::new();
+                for (k, v) in options {
+                    if let &Value::String(ref string_value) = v {
+                        options_hashmap.insert(k.clone(), string_value.clone());
+                    } else {
+                        panic!("Unexpected non-string plugin option {:?}.", v);
+                    }
+                }
+                plugins_vec.push(Plugin {
+                    name: name.clone(),
+                    options: options_hashmap,
+                })
+            } else {
+                panic!("Unexpected non-table plugin entry {:?}.", plugin);
+            }
+        }
+    }
     Ok(Config {
         irc: config,
-        cmd_prefix: cmd_prefix
+        cmd_prefix: cmd_prefix,
+        plugins: plugins_vec,
     })
 }

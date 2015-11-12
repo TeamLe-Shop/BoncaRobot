@@ -1,11 +1,20 @@
 extern crate irc;
 extern crate librc;
 extern crate toml;
+extern crate dylib;
+extern crate pluginapi;
 
 use irc::client::prelude::*;
+use dylib::DynamicLibrary;
+use std::path::Path;
+use std::collections::HashMap;
 
 mod config;
-mod shift;
+
+struct PluginDylibPair {
+    plugin: Box<pluginapi::Plugin>,
+    _dylib: DynamicLibrary,
+}
 
 fn main() {
     // If the configuration file does not exist, try copying over the template.
@@ -22,6 +31,25 @@ fn main() {
         return;
     }
     let config = config::load().unwrap();
+
+    // Load plugins
+    let mut plugin_dylib_pairs = Vec::new();
+
+    for plugin in config.plugins {
+        let path = format!("plugins/{0}/target/release/lib{0}.so", plugin.name);
+        let dl = DynamicLibrary::open(Some(&Path::new(&path))).unwrap();
+        let init: fn(&HashMap<String, String>) -> Box<pluginapi::Plugin> = unsafe {
+            std::mem::transmute(dl.symbol::<()>(// )>(
+                                                "init")
+                                  .unwrap())
+        };
+        let plugin = init(&plugin.options);
+        plugin_dylib_pairs.push(PluginDylibPair {
+            plugin: plugin,
+            _dylib: dl,
+        });
+    }
+
     let my_nick = config.irc.nickname().to_owned();
     let serv = IrcServer::from_config(config.irc).unwrap();
     serv.identify().unwrap();
@@ -58,13 +86,8 @@ fn main() {
             println!("Okay, starts with cmd_prefix \"{}\"", &config.cmd_prefix);
             let cmd = &suffix[config.cmd_prefix.len()..];
             println!("Command is \"{}\"", cmd);
-            if cmd.starts_with("shl ") {
-                let wot = &cmd[4..];
-                serv.send_privmsg(target, &shift::shl(wot)).unwrap();
-            }
-            if cmd.starts_with("shr ") {
-                let wot = &cmd[4..];
-                serv.send_privmsg(target, &shift::shr(wot)).unwrap();
+            for &mut PluginDylibPair{ref mut plugin, ..} in &mut plugin_dylib_pairs {
+                plugin.handle_command(target, cmd, &serv);
             }
             if cmd.starts_with("rc ") {
                 let wot = &cmd[3..];
