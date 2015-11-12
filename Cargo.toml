@@ -5,7 +5,6 @@ authors = ["Mika Attila <radiantstatue@gmail.com>"]
 
 [dependencies]
 irc = "0.9.0"
-librc = { git = "https://github.com/crumblingstatue/rc.git" }
 toml = "0.1.22"
 dylib = "0.0.2"
 pluginapi = { path = "pluginapi" }

@@ -1,5 +1,4 @@
 extern crate irc;
-extern crate librc;
 extern crate toml;
 extern crate dylib;
 extern crate pluginapi;
@@ -53,7 +52,6 @@ fn main() {
     let my_nick = config.irc.nickname().to_owned();
     let serv = IrcServer::from_config(config.irc).unwrap();
     serv.identify().unwrap();
-    let mut calc = librc::calc::Calc::new();
 
     for msg in serv.iter().map(|m| m.unwrap()) {
         println!("{:#?}", msg);
@@ -85,18 +83,6 @@ fn main() {
             let cmd = &suffix[config.cmd_prefix.len()..];
             for &mut PluginDylibPair{ref mut plugin, ..} in &mut plugin_dylib_pairs {
                 plugin.handle_command(target, cmd, &serv);
-            }
-            if cmd.starts_with("rc ") {
-                let wot = &cmd[3..];
-                let mut response = String::new();
-                for expr in wot.split(';') {
-                    match calc.eval(expr) {
-                        Ok(num) => response.push_str(&num.to_string()),
-                        Err(e) => response.push_str(&e.to_string()),
-                    }
-                    response.push_str(", ");
-                }
-                serv.send_privmsg(target, &response).unwrap();
             }
         }
     }

@@ -18,3 +18,5 @@ command-prefix = ""
 # Custom configuration for the plugin
 shl-command = "shl"
 shr-command = "shr"
+# Rusty calculator
+[plugins.rc]

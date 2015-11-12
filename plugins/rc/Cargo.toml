@@ -1,0 +1,13 @@
+[package]
+name = "rc"
+version = "0.1.0"
+authors = ["Mika Attila <radiantstatue@gmail.com>"]
+
+[dependencies]
+pluginapi = { path = "../../pluginapi" }
+irc = "0.9.0"
+librc = { git = "https://github.com/crumblingstatue/rc.git" }
+
+[lib]
+name = "rc"
+crate-type = ["dylib"]
