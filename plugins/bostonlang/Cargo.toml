@@ -1,0 +1,13 @@
+[package]
+name = "bostonlang"
+version = "0.1.0"
+authors = ["Mika Attila <radiantstatue@gmail.com>"]
+
+[dependencies]
+pluginapi = { path = "../../pluginapi" }
+irc = "0.9.0"
+bostondict = { git = "https://github.com/TeamLe-Shop/bostondict.git" }
+
+[lib]
+name = "bostonlang"
+crate-type = ["dylib"]
