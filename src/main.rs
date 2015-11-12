@@ -10,9 +10,33 @@ use std::collections::HashMap;
 
 mod config;
 
-struct PluginDylibPair {
+struct PluginContainer {
+    name: String,
     plugin: Box<pluginapi::Plugin>,
     _dylib: DynamicLibrary,
+}
+
+fn reload_plugin(name: &str, containers: &mut [PluginContainer]) {
+    let mut cont = containers.iter_mut().find(|cont| cont.name == name).unwrap();
+    // Reload the configuration
+    let cfg = config::load_config_for_plugin(name).unwrap();
+    *cont = load_dl_init(&cfg);
+}
+
+fn load_dl_init(plugin: &config::Plugin) -> PluginContainer {
+    let path = format!("plugins/{0}/target/release/lib{0}.so", plugin.name);
+    let dl = DynamicLibrary::open(Some(&Path::new(&path))).unwrap();
+    let init: fn(&HashMap<String, String>) -> Box<pluginapi::Plugin> = unsafe {
+        std::mem::transmute(dl.symbol::<()>(// )>(
+                                            "init")
+                              .unwrap())
+    };
+    let boxed_plugin = init(&plugin.options);
+    PluginContainer {
+        name: plugin.name.clone(),
+        plugin: boxed_plugin,
+        _dylib: dl,
+    }
 }
 
 fn main() {
@@ -32,21 +56,10 @@ fn main() {
     let config = config::load().unwrap();
 
     // Load plugins
-    let mut plugin_dylib_pairs = Vec::new();
+    let mut containers = Vec::new();
 
     for plugin in config.plugins {
-        let path = format!("plugins/{0}/target/release/lib{0}.so", plugin.name);
-        let dl = DynamicLibrary::open(Some(&Path::new(&path))).unwrap();
-        let init: fn(&HashMap<String, String>) -> Box<pluginapi::Plugin> = unsafe {
-            std::mem::transmute(dl.symbol::<()>(// )>(
-                                                "init")
-                                  .unwrap())
-        };
-        let plugin = init(&plugin.options);
-        plugin_dylib_pairs.push(PluginDylibPair {
-            plugin: plugin,
-            _dylib: dl,
-        });
+        containers.push(load_dl_init(&plugin));
     }
 
     let my_nick = config.irc.nickname().to_owned();
@@ -81,7 +94,13 @@ fn main() {
                 continue;
             }
             let cmd = &suffix[config.cmd_prefix.len()..];
-            for &mut PluginDylibPair{ref mut plugin, ..} in &mut plugin_dylib_pairs {
+            let reload_cmd = "reload-plugin ";
+            if cmd.starts_with(reload_cmd) {
+                let name = &cmd[reload_cmd.len()..];
+                reload_plugin(name, &mut containers);
+                serv.send_privmsg(target, &format!("Reloaded plugin {}", name)).unwrap();
+            }
+            for &mut PluginContainer{ref mut plugin, ..} in &mut containers {
                 plugin.handle_command(target, cmd, &serv);
             }
         }

@@ -5,6 +5,7 @@ use toml::ParserError;
 use std::error::Error;
 use std::fmt;
 use std::collections::HashMap;
+use toml;
 
 pub struct Plugin {
     pub name: String,
@@ -71,18 +72,67 @@ impl From<ParserErrors> for LoadError {
 
 pub const PATH: &'static str = "boncarobot.toml";
 
-pub fn load() -> Result<Config, LoadError> {
-    use std::fs::File;
-    use toml::{Parser, Value};
+pub fn load_config_for_plugin(name: &str) -> Result<Plugin, LoadError> {
+    let table = try!(load_toml());
+    let mut plugin: Option<Plugin> = None;
+    for_each_plugin(&table, |plugin_name, options| {
+        if name == plugin_name {
+            plugin = Some(Plugin {
+                name: name.to_owned(),
+                options: get_plugin_opts(options),
+            });
+        }
+    });
+    Ok(plugin.unwrap())
+}
 
+fn load_file_to_string() -> Result<String, io::Error> {
+    use std::fs::File;
     let mut file = try!(File::open(PATH));
     let mut buf = String::new();
     try!(file.read_to_string(&mut buf));
-    let mut parser = Parser::new(&buf);
-    let table = match parser.parse() {
-        Some(table) => table,
+    Ok(buf)
+}
+
+fn load_toml() -> Result<toml::Table, LoadError> {
+    use toml::Parser;
+
+    let string = try!(load_file_to_string());
+    let mut parser = Parser::new(&string);
+    match parser.parse() {
+        Some(table) => Ok(table),
         None => return Err(LoadError::from(ParserErrors(parser.errors))),
-    };
+    }
+}
+
+fn get_plugin_opts(table: &toml::Table) -> HashMap<String, String> {
+    let mut options_hashmap = HashMap::new();
+    for (k, v) in table {
+        if let &toml::Value::String(ref string_value) = v {
+            options_hashmap.insert(k.clone(), string_value.clone());
+        } else {
+            panic!("Unexpected non-string plugin option {:?}.", v);
+        }
+    }
+    options_hashmap
+}
+
+fn for_each_plugin<F: FnMut(&String, &toml::Table)>(table: &toml::Table, mut f: F) {
+    use toml::Value;
+    if let Some(&Value::Table(ref plugins)) = table.get("plugins") {
+        for (name, plugin) in plugins {
+            if let Value::Table(ref options) = *plugin {
+                f(name, options);
+            } else {
+                panic!("Unexpected non-table plugin entry {:?}.", plugin);
+            }
+        }
+    }
+}
+
+pub fn load() -> Result<Config, LoadError> {
+    use toml::Value;
+    let table = try!(load_toml());
     let mut config = IrcConfig {
         server: Some("chat.freenode.net".to_owned()),
         nickname: Some("boncarobot".to_owned()),
@@ -115,26 +165,10 @@ pub fn load() -> Result<Config, LoadError> {
         }
     }
     let mut plugins_vec = Vec::new();
-    if let Some(&Value::Table(ref plugins)) = table.get("plugins") {
-        for (name, plugin) in plugins {
-            if let Value::Table(ref options) = *plugin {
-                let mut options_hashmap = HashMap::new();
-                for (k, v) in options {
-                    if let &Value::String(ref string_value) = v {
-                        options_hashmap.insert(k.clone(), string_value.clone());
-                    } else {
-                        panic!("Unexpected non-string plugin option {:?}.", v);
-                    }
-                }
-                plugins_vec.push(Plugin {
-                    name: name.clone(),
-                    options: options_hashmap,
-                })
-            } else {
-                panic!("Unexpected non-table plugin entry {:?}.", plugin);
-            }
-        }
-    }
+    for_each_plugin(&table, |name, options| plugins_vec.push(Plugin {
+        name: name.clone(),
+        options: get_plugin_opts(options),
+    }));
     Ok(Config {
         irc: config,
         cmd_prefix: cmd_prefix,
