@@ -8,6 +8,19 @@ mod config;
 mod shift;
 
 fn main() {
+    // If the configuration file does not exist, try copying over the template.
+    if !std::path::Path::new(config::PATH).exists() {
+        const TEMPLATE_PATH: &'static str = "boncarobot.template.toml";
+        std::fs::copy(TEMPLATE_PATH, config::PATH).unwrap_or_else(|e| {
+            panic!("Could not copy {} to {}. Try copying it manually. (error: {})",
+                   TEMPLATE_PATH,
+                   config::PATH,
+                   e);
+        });
+        println!("Created configuration file \"{}\". Please review it.",
+                 config::PATH);
+        return;
+    }
     let config = config::load().unwrap();
     let my_nick = config.nickname().to_owned();
     let serv = IrcServer::from_config(config).unwrap();

@@ -57,11 +57,13 @@ impl From<ParserErrors> for LoadError {
     }
 }
 
+pub const PATH: &'static str = "boncarobot.toml";
+
 pub fn load() -> Result<Config, LoadError> {
     use std::fs::File;
     use toml::{Parser, Value};
 
-    let mut file = try!(File::open("boncarobot.toml"));
+    let mut file = try!(File::open(PATH));
     let mut buf = String::new();
     try!(file.read_to_string(&mut buf));
     let mut parser = Parser::new(&buf);
