@@ -4,3 +4,10 @@ url = "chat.freenode.net"
 [bot]
 nick = "boncarobot"
 channels = ["#boncarobot"]
+# This is what the people should type before invoking your bot
+# e.g. if the prefix is "!kekbot ", the people will have to say
+# `!kekbot some-command`
+# Note that it's interpreted literally, so you need to manually put
+# a space if you want a space in the prefix.
+# e.g. the prefix "kek" would be used like "keksome-command"
+command-prefix = ""

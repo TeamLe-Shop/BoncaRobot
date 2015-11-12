@@ -22,8 +22,8 @@ fn main() {
         return;
     }
     let config = config::load().unwrap();
-    let my_nick = config.nickname().to_owned();
-    let serv = IrcServer::from_config(config).unwrap();
+    let my_nick = config.irc.nickname().to_owned();
+    let serv = IrcServer::from_config(config.irc).unwrap();
     serv.identify().unwrap();
     let mut calc = librc::calc::Calc::new();
 
@@ -51,16 +51,23 @@ fn main() {
                     &arg0[..]
                 }
             };
-            if suffix.starts_with("shl ") {
-                let wot = &suffix[4..];
+            if !suffix.starts_with(&config.cmd_prefix) {
+                println!("Doesn't start with cmd_prefix \"{}\"", &config.cmd_prefix);
+                continue;
+            }
+            println!("Okay, starts with cmd_prefix \"{}\"", &config.cmd_prefix);
+            let cmd = &suffix[config.cmd_prefix.len()..];
+            println!("Command is \"{}\"", cmd);
+            if cmd.starts_with("shl ") {
+                let wot = &cmd[4..];
                 serv.send_privmsg(target, &shift::shl(wot)).unwrap();
             }
-            if suffix.starts_with("shr ") {
-                let wot = &suffix[4..];
+            if cmd.starts_with("shr ") {
+                let wot = &cmd[4..];
                 serv.send_privmsg(target, &shift::shr(wot)).unwrap();
             }
-            if suffix.starts_with("rc ") {
-                let wot = &suffix[3..];
+            if cmd.starts_with("rc ") {
+                let wot = &cmd[3..];
                 let mut response = String::new();
                 for expr in wot.split(';') {
                     match calc.eval(expr) {

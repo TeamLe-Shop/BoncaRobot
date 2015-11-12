@@ -1,9 +1,14 @@
-use irc::client::prelude::Config;
+use irc::client::prelude::Config as IrcConfig;
 use std::io;
 use std::io::prelude::*;
 use toml::ParserError;
 use std::error::Error;
 use std::fmt;
+
+pub struct Config {
+    pub irc: IrcConfig,
+    pub cmd_prefix: String,
+}
 
 #[derive(Debug)]
 pub struct ParserErrors(Vec<ParserError>);
@@ -71,7 +76,7 @@ pub fn load() -> Result<Config, LoadError> {
         Some(table) => table,
         None => return Err(LoadError::from(ParserErrors(parser.errors))),
     };
-    let mut config = Config {
+    let mut config = IrcConfig {
         server: Some("chat.freenode.net".to_owned()),
         nickname: Some("boncarobot".to_owned()),
         channels: Some(vec!["#boncarobot".to_owned()]),
@@ -82,6 +87,7 @@ pub fn load() -> Result<Config, LoadError> {
             config.server = Some(url.clone());
         }
     }
+    let mut cmd_prefix = String::new();
     if let Some(&Value::Table(ref bot)) = table.get("bot") {
         if let Some(&Value::String(ref nick)) = bot.get("nick") {
             config.nickname = Some(nick.clone());
@@ -97,6 +103,12 @@ pub fn load() -> Result<Config, LoadError> {
 
             config.channels = Some(channels);
         }
+        if let Some(&Value::String(ref string)) = bot.get("command-prefix") {
+            cmd_prefix = string.clone();
+        }
     }
-    Ok(config)
+    Ok(Config {
+        irc: config,
+        cmd_prefix: cmd_prefix
+    })
 }
