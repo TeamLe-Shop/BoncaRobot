@@ -80,12 +80,9 @@ fn main() {
                 }
             };
             if !suffix.starts_with(&config.cmd_prefix) {
-                println!("Doesn't start with cmd_prefix \"{}\"", &config.cmd_prefix);
                 continue;
             }
-            println!("Okay, starts with cmd_prefix \"{}\"", &config.cmd_prefix);
             let cmd = &suffix[config.cmd_prefix.len()..];
-            println!("Command is \"{}\"", cmd);
             for &mut PluginDylibPair{ref mut plugin, ..} in &mut plugin_dylib_pairs {
                 plugin.handle_command(target, cmd, &serv);
             }
