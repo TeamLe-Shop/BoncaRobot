@@ -1,3 +1,5 @@
+#![feature(catch_panic)]
+
 extern crate irc;
 extern crate toml;
 extern crate dylib;
@@ -97,11 +99,21 @@ fn main() {
                 reload_plugin(name, &mut containers);
                 serv.send_privmsg(target, &format!("Reloaded plugin {}", name)).unwrap();
             }
-            for &mut PluginContainer{respond_to_command, ..} in &mut containers {
-                let msg = respond_to_command(cmd);
-                if !msg.is_empty() {
-                    println!("!!! Sending {:?} !!!", msg);
-                    serv.send_privmsg(target, &msg).unwrap();
+            for &mut PluginContainer{respond_to_command, ref name, ..} in &mut containers {
+                let fresh = cmd.to_owned();
+                match std::thread::catch_panic(move || {
+                    respond_to_command(&fresh)
+                }) {
+                    Ok(msg) => {
+                        if !msg.is_empty() {
+                            println!("!!! Sending {:?} !!!", msg);
+                            serv.send_privmsg(target, &msg).unwrap();
+                        }
+                    }
+                    Err(_) => {
+                        let errmsg = format!("Plugin \"{}\" panicked.", name);
+                        let _ = serv.send_privmsg(target, &errmsg);
+                    }
                 }
             }
         }
