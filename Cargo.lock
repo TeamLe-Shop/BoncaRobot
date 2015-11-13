@@ -4,7 +4,6 @@ version = "0.1.0"
 dependencies = [
  "dylib 0.0.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "irc 0.9.1 (registry+https://github.com/rust-lang/crates.io-index)",
- "pluginapi 0.1.0",
  "toml 0.1.23 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
@@ -165,13 +164,6 @@ dependencies = [
 name = "pkg-config"
 version = "0.3.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-
-[[package]]
-name = "pluginapi"
-version = "0.1.0"
-dependencies = [
- "irc 0.9.1 (registry+https://github.com/rust-lang/crates.io-index)",
-]
 
 [[package]]
 name = "pnacl-build-helper"

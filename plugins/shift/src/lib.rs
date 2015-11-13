@@ -1,33 +1,15 @@
-extern crate pluginapi;
-extern crate irc;
-use irc::client::server::utils::ServerExt;
-
-use pluginapi::{IrcServer, Plugin};
-
-struct Shifter {
-    shl_command: String,
-    shr_command: String,
-}
-
-impl Plugin for Shifter {
-    fn handle_command(&mut self, target: &str, cmd: &str, serv: &IrcServer) {
-        if cmd.starts_with(&self.shl_command) {
-            let wot = &cmd[self.shl_command.len()..];
-            serv.send_privmsg(target, &shl(wot)).unwrap();
-        }
-        if cmd.starts_with(&self.shr_command) {
-            let wot = &cmd[self.shr_command.len()..];
-            serv.send_privmsg(target, &shr(wot)).unwrap();
-        }
-    }
-}
-
 #[no_mangle]
-pub fn init(opts: &std::collections::HashMap<String, String>) -> Box<Plugin> {
-    Box::new(Shifter {
-        shl_command: opts.get("shl-command".into()).unwrap_or(&"shl ".into()).clone(),
-        shr_command: opts.get("shr-command".into()).unwrap_or(&"shr ".into()).clone(),
-    })
+pub fn respond_to_command(cmd: &str, mut buf: &mut [u8]) {
+    use std::io::Write;
+    let shl_command = "shl ";
+    let shr_command = "shr ";
+    if cmd.starts_with(shl_command) {
+        let wot = &cmd[shl_command.len()..];
+        let _ = write!(buf, "{}", shl(wot));
+    } else if cmd.starts_with(shr_command) {
+        let wot = &cmd[shr_command.len()..];
+        let _ = write!(buf, "{}", shr(wot));
+    }
 }
 
 fn find_shl(seq: &[u8], c: char) -> Option<char> {

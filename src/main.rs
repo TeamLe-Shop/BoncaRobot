@@ -1,18 +1,18 @@
 extern crate irc;
 extern crate toml;
 extern crate dylib;
-extern crate pluginapi;
 
 use irc::client::prelude::*;
 use dylib::DynamicLibrary;
 use std::path::Path;
-use std::collections::HashMap;
 
 mod config;
 
+type RespondToCommand = fn(cmd: &str, buf: &mut [u8]);
+
 struct PluginContainer {
     name: String,
-    plugin: Box<pluginapi::Plugin>,
+    respond_to_command: RespondToCommand,
     _dylib: DynamicLibrary,
 }
 
@@ -24,17 +24,14 @@ fn reload_plugin(name: &str, containers: &mut [PluginContainer]) {
 }
 
 fn load_dl_init(plugin: &config::Plugin) -> PluginContainer {
-    let path = format!("plugins/{0}/target/release/lib{0}.so", plugin.name);
+    let path = format!("plugins/{0}/target/debug/lib{0}.so", plugin.name);
     let dl = DynamicLibrary::open(Some(&Path::new(&path))).unwrap();
-    let init: fn(&HashMap<String, String>) -> Box<pluginapi::Plugin> = unsafe {
-        std::mem::transmute(dl.symbol::<()>(// )>(
-                                            "init")
-                              .unwrap())
+    let respond_to_command: RespondToCommand = unsafe {
+        std::mem::transmute(dl.symbol::<()>("respond_to_command").unwrap())
     };
-    let boxed_plugin = init(&plugin.options);
     PluginContainer {
         name: plugin.name.clone(),
-        plugin: boxed_plugin,
+        respond_to_command: respond_to_command,
         _dylib: dl,
     }
 }
@@ -100,8 +97,12 @@ fn main() {
                 reload_plugin(name, &mut containers);
                 serv.send_privmsg(target, &format!("Reloaded plugin {}", name)).unwrap();
             }
-            for &mut PluginContainer{ref mut plugin, ..} in &mut containers {
-                plugin.handle_command(target, cmd, &serv);
+            for &mut PluginContainer{respond_to_command, ..} in &mut containers {
+                println!("!!! Executing command !!!");
+                let mut buf = vec![0; 512];
+                respond_to_command(cmd, &mut buf);
+                let msg = String::from_utf8_lossy(&buf);
+                serv.send_privmsg(target, &msg).unwrap();
             }
         }
     }

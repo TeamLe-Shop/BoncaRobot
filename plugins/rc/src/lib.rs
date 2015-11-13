@@ -1,41 +1,28 @@
 extern crate librc;
-extern crate pluginapi;
-extern crate irc;
-use irc::client::server::utils::ServerExt;
 
-use pluginapi::{IrcServer, Plugin};
-use std::collections::HashMap;
+use std::cell::RefCell;
+use librc::calc::Calc;
+
+thread_local!(static CALC: RefCell<Calc> = RefCell::new(Calc::new()));
+
 
 #[no_mangle]
-pub fn init(_options: HashMap<String, String>) -> Box<Plugin> {
-    Box::new(RcPlugin::new())
-}
-
-struct RcPlugin {
-    calc: librc::calc::Calc,
-}
-
-impl RcPlugin {
-    fn new() -> Self {
-        RcPlugin {
-            calc: librc::calc::Calc::new(),
-        }
-    }
-}
-
-impl Plugin for RcPlugin {
-    fn handle_command(&mut self, target: &str, cmd: &str, serv: &IrcServer) {
+pub fn respond_to_command(cmd: &str, mut buf: &mut [u8]) {
+    CALC.with(|calc| {
         if cmd.starts_with("rc ") {
+            use std::io::Write;
+
             let wot = &cmd[3..];
             let mut response = String::new();
             for expr in wot.split(';') {
-                match self.calc.eval(expr) {
+                match calc.borrow_mut().eval(expr) {
                     Ok(num) => response.push_str(&num.to_string()),
                     Err(e) => response.push_str(&e.to_string()),
                 }
                 response.push_str(", ");
             }
-            serv.send_privmsg(target, &response).unwrap();
+
+            let _ = write!(buf, "{}", response);
         }
-    }
+    });
 }

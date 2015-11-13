@@ -7,4 +7,3 @@ authors = ["Mika Attila <radiantstatue@gmail.com>"]
 irc = "0.9.0"
 toml = "0.1.22"
 dylib = "0.0.2"
-pluginapi = { path = "pluginapi" }
