@@ -8,5 +8,5 @@ dependencies = [
 [[package]]
 name = "librc"
 version = "0.1.0"
-source = "git+https://github.com/crumblingstatue/rc.git#800b4a8b1a5d8f172055ae55c7eea660730c172d"
+source = "git+https://github.com/crumblingstatue/rc.git#f2cc14eaf4b8021a577aa1c8a6a3579235d072cd"
 
