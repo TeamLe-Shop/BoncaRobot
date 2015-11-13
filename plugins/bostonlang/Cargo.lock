@@ -8,5 +8,5 @@ dependencies = [
 [[package]]
 name = "bostondict"
 version = "0.1.0"
-source = "git+https://github.com/TeamLe-Shop/bostondict.git#0937cef73bf41f4cb927408eaedb3b873014fcd2"
+source = "git+https://github.com/TeamLe-Shop/bostondict.git#03ea938fd5fa88ecadedd61d105f946eb04c5b71"
 

@@ -10,9 +10,9 @@ pub fn respond_to_command(cmd: &str) -> String {
         let b2ecmd = "b2e ";
         let e2bcmd = "e2b ";
         if cmd.starts_with(b2ecmd) {
-            dict.boston_to_eng(&cmd[b2ecmd.len()..])
+            dict.boston_to_eng(&cmd[b2ecmd.len()..]).unwrap_or(r"¯\_(ツ)_/¯".into())
         } else if cmd.starts_with(e2bcmd) {
-            dict.eng_to_boston(&cmd[e2bcmd.len()..])
+            dict.eng_to_boston(&cmd[e2bcmd.len()..]).unwrap_or(r"¯\_(ツ)_/¯".into())
         } else {
             String::new()
         }
