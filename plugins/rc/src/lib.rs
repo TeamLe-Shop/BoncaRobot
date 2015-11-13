@@ -5,13 +5,10 @@ use librc::calc::Calc;
 
 thread_local!(static CALC: RefCell<Calc> = RefCell::new(Calc::new()));
 
-
 #[no_mangle]
-pub fn respond_to_command(cmd: &str, mut buf: &mut [u8]) {
+pub fn respond_to_command(cmd: &str) -> String {
     CALC.with(|calc| {
         if cmd.starts_with("rc ") {
-            use std::io::Write;
-
             let wot = &cmd[3..];
             let mut response = String::new();
             for expr in wot.split(';') {
@@ -22,7 +19,9 @@ pub fn respond_to_command(cmd: &str, mut buf: &mut [u8]) {
                 response.push_str(", ");
             }
 
-            let _ = write!(buf, "{}", response);
+            response
+        } else {
+            String::new()
         }
-    });
+    })
 }

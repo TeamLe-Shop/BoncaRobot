@@ -8,7 +8,7 @@ use std::path::Path;
 
 mod config;
 
-type RespondToCommand = fn(cmd: &str, buf: &mut [u8]);
+type RespondToCommand = fn(cmd: &str) -> String;
 
 struct PluginContainer {
     name: String,
@@ -98,11 +98,11 @@ fn main() {
                 serv.send_privmsg(target, &format!("Reloaded plugin {}", name)).unwrap();
             }
             for &mut PluginContainer{respond_to_command, ..} in &mut containers {
-                println!("!!! Executing command !!!");
-                let mut buf = vec![0; 512];
-                respond_to_command(cmd, &mut buf);
-                let msg = String::from_utf8_lossy(&buf);
-                serv.send_privmsg(target, &msg).unwrap();
+                let msg = respond_to_command(cmd);
+                if !msg.is_empty() {
+                    println!("!!! Sending {:?} !!!", msg);
+                    serv.send_privmsg(target, &msg).unwrap();
+                }
             }
         }
     }

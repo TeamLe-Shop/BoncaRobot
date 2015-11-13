@@ -9,3 +9,8 @@ bostondict = { git = "https://github.com/TeamLe-Shop/bostondict.git" }
 [lib]
 name = "bostonlang"
 crate-type = ["dylib"]
+# This is important, makes it so that the lib is compiled with
+# rustc -C prefer-dynamic, which is required for
+# things like freeing something in the host that was allocated
+# in the plugin
+plugin = true

@@ -1,14 +1,15 @@
 #[no_mangle]
-pub fn respond_to_command(cmd: &str, mut buf: &mut [u8]) {
-    use std::io::Write;
+pub fn respond_to_command(cmd: &str) -> String {
     let shl_command = "shl ";
     let shr_command = "shr ";
     if cmd.starts_with(shl_command) {
         let wot = &cmd[shl_command.len()..];
-        let _ = write!(buf, "{}", shl(wot));
+        shl(wot)
     } else if cmd.starts_with(shr_command) {
         let wot = &cmd[shr_command.len()..];
-        let _ = write!(buf, "{}", shr(wot));
+        shr(wot)
+    } else {
+        String::new()
     }
 }
 
