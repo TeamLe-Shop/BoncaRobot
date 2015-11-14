@@ -7,6 +7,8 @@ extern crate dylib;
 use irc::client::prelude::*;
 use dylib::DynamicLibrary;
 use std::path::Path;
+use std::error::Error;
+use std::fmt;
 
 mod config;
 
@@ -14,28 +16,72 @@ type RespondToCommand = fn(cmd: &str) -> String;
 
 struct PluginContainer {
     name: String,
-    respond_to_command: RespondToCommand,
-    _dylib: DynamicLibrary,
+    respond_to_command: Option<RespondToCommand>,
+    _dylib: Option<DynamicLibrary>,
 }
 
-fn reload_plugin(name: &str, containers: &mut [PluginContainer]) {
-    let mut cont = containers.iter_mut().find(|cont| cont.name == name).unwrap();
-    // Reload the configuration
-    let cfg = config::load_config_for_plugin(name).unwrap();
-    *cont = load_dl_init(&cfg);
-}
-
-fn load_dl_init(plugin: &config::Plugin) -> PluginContainer {
-    let path = format!("plugins/{0}/target/debug/lib{0}.so", plugin.name);
-    let dl = DynamicLibrary::open(Some(&Path::new(&path))).unwrap();
-    let respond_to_command: RespondToCommand = unsafe {
-        std::mem::transmute(dl.symbol::<()>("respond_to_command").unwrap())
-    };
-    PluginContainer {
-        name: plugin.name.clone(),
-        respond_to_command: respond_to_command,
-        _dylib: dl,
+impl Drop for PluginContainer {
+    fn drop(&mut self) {
+        drop(self.respond_to_command.take());
+        drop(self._dylib.take());
     }
+}
+
+#[derive(Debug)]
+struct NoSuchPluginError {
+    name: String,
+}
+
+impl fmt::Display for NoSuchPluginError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "No such plugin: {:?}", self.name)
+    }
+}
+
+impl Error for NoSuchPluginError {
+    fn description(&self) -> &str {
+        "No such plugin"
+    }
+}
+
+#[derive(Debug)]
+struct DylibError {
+    err: String,
+}
+
+impl fmt::Display for DylibError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "Dylib error: {}", self.err)
+    }
+}
+
+impl Error for DylibError {
+    fn description(&self) -> &str {
+        "Dynamic library error"
+    }
+}
+
+fn reload_plugin(name: &str, containers: &mut [PluginContainer]) -> Result<(), Box<Error>> {
+    let mut cont = try!(containers.iter_mut().find(|cont| cont.name == name).ok_or(NoSuchPluginError{name: name.into()}));
+    // Reload the configuration
+    let cfg = try!(config::load_config_for_plugin(name));
+    drop(cont.respond_to_command.take());
+    drop(cont._dylib.take());
+    *cont = try!(load_dl_init(&cfg));
+    Ok(())
+}
+
+fn load_dl_init(plugin: &config::Plugin) -> Result<PluginContainer, Box<Error>> {
+    let path = format!("plugins/{0}/target/debug/lib{0}.so", plugin.name);
+    let dl = try!(DynamicLibrary::open(Some(&Path::new(&path))).map_err(|e| DylibError{err: e}));
+    let respond_to_command: RespondToCommand = unsafe {
+        std::mem::transmute(try!(dl.symbol::<()>("respond_to_command").map_err(|e| DylibError{err: e})))
+    };
+    Ok(PluginContainer {
+        name: plugin.name.clone(),
+        respond_to_command: Some(respond_to_command),
+        _dylib: Some(dl),
+    })
 }
 
 fn main() {
@@ -55,10 +101,10 @@ fn main() {
     let config = config::load().unwrap();
 
     // Load plugins
-    let mut containers = Vec::new();
+    let mut containers: Vec<PluginContainer> = Vec::new();
 
     for plugin in config.plugins {
-        containers.push(load_dl_init(&plugin));
+        containers.push(load_dl_init(&plugin).unwrap());
     }
 
     let my_nick = config.irc.nickname().to_owned();
@@ -96,13 +142,20 @@ fn main() {
             let reload_cmd = "reload-plugin ";
             if cmd.starts_with(reload_cmd) {
                 let name = &cmd[reload_cmd.len()..];
-                reload_plugin(name, &mut containers);
-                serv.send_privmsg(target, &format!("Reloaded plugin {}", name)).unwrap();
+                match reload_plugin(name, &mut containers) {
+                    Ok(()) => {
+                        serv.send_privmsg(target, &format!("Reloaded plugin {}", name)).unwrap();
+                    }
+                    Err(e) => {
+                        serv.send_privmsg(target, &format!("Failed to reload plugin {}: {}", name, e)).unwrap();
+                    }
+                }
+
             }
             for &mut PluginContainer{respond_to_command, ref name, ..} in &mut containers {
                 let fresh = cmd.to_owned();
                 match std::thread::catch_panic(move || {
-                    respond_to_command(&fresh)
+                    respond_to_command.unwrap()(&fresh)
                 }) {
                     Ok(msg) => {
                         if !msg.is_empty() {
