@@ -165,10 +165,12 @@ pub fn load() -> Result<Config, LoadError> {
         }
     }
     let mut plugins_vec = Vec::new();
-    for_each_plugin(&table, |name, options| plugins_vec.push(Plugin {
-        name: name.clone(),
-        options: get_plugin_opts(options),
-    }));
+    for_each_plugin(&table, |name, options| {
+        plugins_vec.push(Plugin {
+            name: name.clone(),
+            options: get_plugin_opts(options),
+        })
+    });
     Ok(Config {
         irc: config,
         cmd_prefix: cmd_prefix,

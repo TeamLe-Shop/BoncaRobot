@@ -62,7 +62,9 @@ impl Error for DylibError {
 }
 
 fn reload_plugin(name: &str, containers: &mut [PluginContainer]) -> Result<(), Box<Error>> {
-    let mut cont = try!(containers.iter_mut().find(|cont| cont.name == name).ok_or(NoSuchPluginError{name: name.into()}));
+    let mut cont = try!(containers.iter_mut()
+                                  .find(|cont| cont.name == name)
+                                  .ok_or(NoSuchPluginError { name: name.into() }));
     // Reload the configuration
     let cfg = try!(config::load_config_for_plugin(name));
     drop(cont.respond_to_command.take());
@@ -73,9 +75,10 @@ fn reload_plugin(name: &str, containers: &mut [PluginContainer]) -> Result<(), B
 
 fn load_dl_init(plugin: &config::Plugin) -> Result<PluginContainer, Box<Error>> {
     let path = format!("plugins/{0}/target/debug/lib{0}.so", plugin.name);
-    let dl = try!(DynamicLibrary::open(Some(&Path::new(&path))).map_err(|e| DylibError{err: e}));
+    let dl = try!(DynamicLibrary::open(Some(&Path::new(&path))).map_err(|e| DylibError { err: e }));
     let respond_to_command: RespondToCommand = unsafe {
-        std::mem::transmute(try!(dl.symbol::<()>("respond_to_command").map_err(|e| DylibError{err: e})))
+        std::mem::transmute(try!(dl.symbol::<()>("respond_to_command")
+                                   .map_err(|e| DylibError { err: e })))
     };
     Ok(PluginContainer {
         name: plugin.name.clone(),
@@ -147,16 +150,16 @@ fn main() {
                         serv.send_privmsg(target, &format!("Reloaded plugin {}", name)).unwrap();
                     }
                     Err(e) => {
-                        serv.send_privmsg(target, &format!("Failed to reload plugin {}: {}", name, e)).unwrap();
+                        serv.send_privmsg(target,
+                                          &format!("Failed to reload plugin {}: {}", name, e))
+                            .unwrap();
                     }
                 }
 
             }
             for &mut PluginContainer{respond_to_command, ref name, ..} in &mut containers {
                 let fresh = cmd.to_owned();
-                match std::thread::catch_panic(move || {
-                    respond_to_command.unwrap()(&fresh)
-                }) {
+                match std::thread::catch_panic(move || respond_to_command.unwrap()(&fresh)) {
                     Ok(msg) => {
                         if !msg.is_empty() {
                             println!("!!! Sending {:?} !!!", msg);
