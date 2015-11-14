@@ -101,7 +101,7 @@ fn load_toml() -> Result<toml::Table, LoadError> {
     let mut parser = Parser::new(&string);
     match parser.parse() {
         Some(table) => Ok(table),
-        None => return Err(LoadError::from(ParserErrors(parser.errors))),
+        None => Err(LoadError::from(ParserErrors(parser.errors))),
     }
 }
 
