@@ -1,4 +1,4 @@
-#![feature(catch_panic)]
+#![feature(recover)]
 
 extern crate irc;
 extern crate toml;
@@ -159,7 +159,7 @@ fn main() {
             }
             for &mut PluginContainer{respond_to_command, ref name, ..} in &mut containers {
                 let fresh = cmd.to_owned();
-                match std::thread::catch_panic(move || respond_to_command.unwrap()(&fresh)) {
+                match std::panic::recover(move || respond_to_command.unwrap()(&fresh)) {
                     Ok(msg) => {
                         if !msg.is_empty() {
                             println!("!!! Sending {:?} !!!", msg);

@@ -108,7 +108,7 @@ fn load_toml() -> Result<toml::Table, LoadError> {
 fn get_plugin_opts(table: &toml::Table) -> HashMap<String, String> {
     let mut options_hashmap = HashMap::new();
     for (k, v) in table {
-        if let &toml::Value::String(ref string_value) = v {
+        if let toml::Value::String(ref string_value) = *v {
             options_hashmap.insert(k.clone(), string_value.clone());
         } else {
             panic!("Unexpected non-string plugin option {:?}.", v);
@@ -153,7 +153,7 @@ pub fn load() -> Result<Config, LoadError> {
             let mut channels = Vec::new();
 
             for v in array.iter() {
-                if let &Value::String(ref channel) = v {
+                if let Value::String(ref channel) = *v {
                     channels.push(channel.clone());
                 }
             }
