@@ -17,13 +17,13 @@ type RespondToCommand = fn(cmd: &str) -> String;
 struct PluginContainer {
     name: String,
     respond_to_command: Option<RespondToCommand>,
-    _dylib: Option<DynamicLibrary>,
+    dylib: Option<DynamicLibrary>,
 }
 
 impl Drop for PluginContainer {
     fn drop(&mut self) {
         drop(self.respond_to_command.take());
-        drop(self._dylib.take());
+        drop(self.dylib.take());
     }
 }
 
@@ -68,7 +68,7 @@ fn reload_plugin(name: &str, containers: &mut [PluginContainer]) -> Result<(), B
     // Reload the configuration
     let cfg = try!(config::load_config_for_plugin(name));
     drop(cont.respond_to_command.take());
-    drop(cont._dylib.take());
+    drop(cont.dylib.take());
     *cont = try!(load_dl_init(&cfg));
     Ok(())
 }
@@ -83,7 +83,7 @@ fn load_dl_init(plugin: &config::Plugin) -> Result<PluginContainer, Box<Error>> 
     Ok(PluginContainer {
         name: plugin.name.clone(),
         respond_to_command: Some(respond_to_command),
-        _dylib: Some(dl),
+        dylib: Some(dl),
     })
 }
 
