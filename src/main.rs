@@ -74,7 +74,7 @@ fn reload_plugin(name: &str, containers: &mut [PluginContainer]) -> Result<(), B
 }
 
 fn load_dl_init(plugin: &config::Plugin) -> Result<PluginContainer, Box<Error>> {
-    let path = format!("plugins/{0}/target/debug/lib{0}.so", plugin.name);
+    let path = format!("plugins/{0}/target/release/lib{0}.so", plugin.name);
     let dl = try!(DynamicLibrary::open(Some(&Path::new(&path))).map_err(|e| DylibError { err: e }));
     let respond_to_command: RespondToCommand = unsafe {
         std::mem::transmute(try!(dl.symbol::<()>("respond_to_command")
@@ -116,62 +116,54 @@ fn main() {
 
     for msg in serv.iter().map(|m| m.unwrap()) {
         println!("{:#?}", msg);
-        if let Message{suffix: Some(ref suffix), ref args, ref command, ..} = msg {
-            let target = {
-                let arg0 = match args.get(0) {
-                    Some(arg) => arg,
-                    // No args, probably ping
-                    None => {
-                        if command == "PING" {
-                            serv.send(Command::PONG(suffix.clone(), None)).unwrap();
-                        }
-                        continue;
-                    }
-                };
-                if arg0 == &my_nick {
-                    match msg.get_source_nickname() {
+        match msg.command {
+            Command::PING(srv1, srv2) => serv.send(Command::PONG(srv1, srv2)).unwrap(),
+            Command::PRIVMSG(ref target, ref message) => {
+                let recipient = if *target == my_nick {
+                    match msg.source_nickname() {
                         Some(nick) => nick,
                         // We don't know who to reply to, so we bail out
                         None => continue,
                     }
                 } else {
-                    &arg0[..]
+                    &target[..]
+                };
+                if !message.starts_with(&config.cmd_prefix) {
+                    continue;
                 }
-            };
-            if !suffix.starts_with(&config.cmd_prefix) {
-                continue;
-            }
-            let cmd = &suffix[config.cmd_prefix.len()..];
-            let reload_cmd = "reload-plugin ";
-            if cmd.starts_with(reload_cmd) {
-                let name = &cmd[reload_cmd.len()..];
-                match reload_plugin(name, &mut containers) {
-                    Ok(()) => {
-                        serv.send_privmsg(target, &format!("Reloaded plugin {}", name)).unwrap();
-                    }
-                    Err(e) => {
-                        serv.send_privmsg(target,
-                                          &format!("Failed to reload plugin {}: {}", name, e))
-                            .unwrap();
-                    }
-                }
-
-            }
-            for &mut PluginContainer{respond_to_command, ref name, ..} in &mut containers {
-                let fresh = cmd.to_owned();
-                match std::panic::recover(move || respond_to_command.unwrap()(&fresh)) {
-                    Ok(msg) => {
-                        if !msg.is_empty() {
-                            println!("!!! Sending {:?} !!!", msg);
-                            serv.send_privmsg(target, &msg).unwrap();
+                let cmd = &message[config.cmd_prefix.len()..];
+                let reload_cmd = "reload-plugin ";
+                if cmd.starts_with(reload_cmd) {
+                    let name = &cmd[reload_cmd.len()..];
+                    match reload_plugin(name, &mut containers) {
+                        Ok(()) => {
+                            serv.send_privmsg(recipient, &format!("Reloaded plugin {}", name)).unwrap();
+                        }
+                        Err(e) => {
+                            serv.send_privmsg(recipient,
+                                              &format!("Failed to reload plugin {}: {}", name, e))
+                                .unwrap();
                         }
                     }
-                    Err(_) => {
-                        let errmsg = format!("Plugin \"{}\" panicked.", name);
-                        let _ = serv.send_privmsg(target, &errmsg);
+
+                }
+                for &mut PluginContainer{respond_to_command, ref name, ..} in &mut containers {
+                    let fresh = cmd.to_owned();
+                    match std::panic::recover(move || respond_to_command.unwrap()(&fresh)) {
+                        Ok(msg) => {
+                            if !msg.is_empty() {
+                                println!("!!! Sending {:?} !!!", msg);
+                                serv.send_privmsg(recipient, &msg).unwrap();
+                            }
+                        }
+                        Err(_) => {
+                            let errmsg = format!("Plugin \"{}\" panicked.", name);
+                            let _ = serv.send_privmsg(recipient, &errmsg);
+                        }
                     }
                 }
             }
+            _ => {}
         }
     }
 }
