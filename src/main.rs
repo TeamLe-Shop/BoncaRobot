@@ -134,6 +134,7 @@ fn main() {
                 let cmd = &message[config.cmd_prefix.len()..];
                 let reload_cmd = "reload-plugin ";
                 let load_cmd = "load-plugin ";
+                let unload_cmd = "unload-plugin ";
                 if cmd.starts_with(reload_cmd) {
                     let name = &cmd[reload_cmd.len()..];
                     match reload_plugin(name, &mut containers) {
@@ -166,6 +167,17 @@ fn main() {
                             serv.send_privmsg(recipient, &msg).unwrap();
                         }
                     }
+                } else if cmd.starts_with(unload_cmd) {
+                    let name = &cmd[unload_cmd.len()..];
+                    containers.retain(|p| {
+                        if p.name == name {
+                            let msg = format!("Removed \"{}\" plugin.", name);
+                            serv.send_privmsg(recipient, &msg).unwrap();
+                            false
+                        } else {
+                            true
+                        }
+                    });
                 }
                 for &mut PluginContainer { respond_to_command, ref name, .. } in &mut containers {
                     let fresh = cmd.to_owned();
