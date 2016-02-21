@@ -133,6 +133,7 @@ fn main() {
                 }
                 let cmd = &message[config.cmd_prefix.len()..];
                 let reload_cmd = "reload-plugin ";
+                let load_cmd = "load-plugin ";
                 if cmd.starts_with(reload_cmd) {
                     let name = &cmd[reload_cmd.len()..];
                     match reload_plugin(name, &mut containers) {
@@ -147,6 +148,24 @@ fn main() {
                         }
                     }
 
+                } else if cmd.starts_with(load_cmd) {
+                    use std::collections::HashMap;
+                    let name = &cmd[load_cmd.len()..];
+                    let plugin = config::Plugin {
+                        name: name.to_owned(),
+                        options: HashMap::new(),
+                    };
+                    match load_dl_init(&plugin) {
+                        Ok(pc) => {
+                            containers.push(pc);
+                            let msg = format!("Loaded \"{}\" plugin.", name);
+                            serv.send_privmsg(recipient, &msg).unwrap();
+                        }
+                        Err(e) => {
+                            let msg = format!("Failed to load \"{}\": {}", name, e);
+                            serv.send_privmsg(recipient, &msg).unwrap();
+                        }
+                    }
                 }
                 for &mut PluginContainer { respond_to_command, ref name, .. } in &mut containers {
                     let fresh = cmd.to_owned();
