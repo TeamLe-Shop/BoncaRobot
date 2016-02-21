@@ -137,7 +137,8 @@ fn main() {
                     let name = &cmd[reload_cmd.len()..];
                     match reload_plugin(name, &mut containers) {
                         Ok(()) => {
-                            serv.send_privmsg(recipient, &format!("Reloaded plugin {}", name)).unwrap();
+                            serv.send_privmsg(recipient, &format!("Reloaded plugin {}", name))
+                                .unwrap();
                         }
                         Err(e) => {
                             serv.send_privmsg(recipient,
@@ -147,7 +148,7 @@ fn main() {
                     }
 
                 }
-                for &mut PluginContainer{respond_to_command, ref name, ..} in &mut containers {
+                for &mut PluginContainer { respond_to_command, ref name, .. } in &mut containers {
                     let fresh = cmd.to_owned();
                     match std::panic::recover(move || respond_to_command.unwrap()(&fresh)) {
                         Ok(msg) => {
