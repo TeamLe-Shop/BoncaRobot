@@ -9,13 +9,13 @@ use dylib::DynamicLibrary;
 use std::path::Path;
 use std::error::Error;
 use std::fmt;
+use std::collections::HashMap;
 
 mod config;
 
 type RespondToCommand = fn(cmd: &str) -> String;
 
 struct PluginContainer {
-    name: String,
     respond_to_command: Option<RespondToCommand>,
     dylib: Option<DynamicLibrary>,
 }
@@ -61,9 +61,10 @@ impl Error for DylibError {
     }
 }
 
-fn reload_plugin(name: &str, containers: &mut [PluginContainer]) -> Result<(), Box<Error>> {
-    let mut cont = try!(containers.iter_mut()
-                                  .find(|cont| cont.name == name)
+fn reload_plugin(name: &str,
+                 containers: &mut HashMap<String, PluginContainer>)
+                 -> Result<(), Box<Error>> {
+    let mut cont = try!(containers.get_mut(name)
                                   .ok_or(NoSuchPluginError { name: name.into() }));
     // Reload the configuration
     let cfg = try!(config::load_config_for_plugin(name));
@@ -81,7 +82,6 @@ fn load_dl_init(plugin: &config::Plugin) -> Result<PluginContainer, Box<Error>> 
                                    .map_err(|e| DylibError { err: e })))
     };
     Ok(PluginContainer {
-        name: plugin.name.clone(),
         respond_to_command: Some(respond_to_command),
         dylib: Some(dl),
     })
@@ -104,10 +104,10 @@ fn main() {
     let config = config::load().unwrap();
 
     // Load plugins
-    let mut containers: Vec<PluginContainer> = Vec::new();
+    let mut containers: HashMap<String, PluginContainer> = HashMap::new();
 
     for plugin in config.plugins {
-        containers.push(load_dl_init(&plugin).unwrap());
+        containers.insert(plugin.name.clone(), load_dl_init(&plugin).unwrap());
     }
 
     let my_nick = config.irc.nickname().to_owned();
@@ -158,7 +158,7 @@ fn main() {
                     };
                     match load_dl_init(&plugin) {
                         Ok(pc) => {
-                            containers.push(pc);
+                            containers.insert(name.to_owned(), pc);
                             let msg = format!("Loaded \"{}\" plugin.", name);
                             serv.send_privmsg(recipient, &msg).unwrap();
                         }
@@ -169,17 +169,12 @@ fn main() {
                     }
                 } else if cmd.starts_with(unload_cmd) {
                     let name = &cmd[unload_cmd.len()..];
-                    containers.retain(|p| {
-                        if p.name == name {
-                            let msg = format!("Removed \"{}\" plugin.", name);
-                            serv.send_privmsg(recipient, &msg).unwrap();
-                            false
-                        } else {
-                            true
-                        }
-                    });
+                    if containers.remove(name).is_some() {
+                        let msg = format!("Removed \"{}\" plugin.", name);
+                        serv.send_privmsg(recipient, &msg).unwrap();
+                    }
                 }
-                for &mut PluginContainer { respond_to_command, ref name, .. } in &mut containers {
+                for (name, &mut PluginContainer { respond_to_command, .. }) in &mut containers {
                     let fresh = cmd.to_owned();
                     match std::panic::recover(move || respond_to_command.unwrap()(&fresh)) {
                         Ok(msg) => {
