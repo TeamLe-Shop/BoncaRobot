@@ -4,6 +4,6 @@ version = "0.1.0"
 authors = ["Mika Attila <radiantstatue@gmail.com>"]
 
 [dependencies]
-irc = "0.10.1"
-toml = "0.1.27"
+irc = "0.11.1"
+toml = "0.1.28"
 dylib = "0.0.2"
