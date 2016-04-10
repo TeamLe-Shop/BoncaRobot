@@ -16,7 +16,7 @@ use std::thread;
 
 mod config;
 
-type RespondToCommand = fn(cmd: &str) -> String;
+type RespondToCommand = fn(cmd: &str, sender: &str) -> String;
 
 struct PluginContainer {
     respond_to_command: Option<RespondToCommand>,
@@ -73,7 +73,16 @@ fn reload_plugin(name: &str,
     let mut cont = try!(containers.get_mut(name)
                                   .ok_or(NoSuchPluginError { name: name.into() }));
     // Reload the configuration
-    let cfg = try!(config::load_config_for_plugin(name));
+    let cfg = match config::load_config_for_plugin(name) {
+        Ok(config) => config,
+        Err(e) => {
+            println!("Warning: Failed to load config for plugin: {}", e);
+            config::Plugin {
+                name: name.into(),
+                options: HashMap::new(),
+            }
+        }
+    };
     drop(cont.respond_to_command.take());
     drop(cont.dylib.take());
     *cont = try!(load_dl_init(&cfg));
@@ -142,7 +151,7 @@ impl hiirc::Listener for SyncBoncaListener {
     fn channel_msg(&mut self,
                    irc: Arc<hiirc::Irc>,
                    channel: Arc<hiirc::Channel>,
-                   _sender: Arc<hiirc::ChannelUser>,
+                   sender: Arc<hiirc::ChannelUser>,
                    message: &str) {
         let mut lis = self.0.lock().unwrap();
         let recipient = channel.name();
@@ -152,7 +161,8 @@ impl hiirc::Listener for SyncBoncaListener {
         let cmd = &message[lis.config.cmd_prefix.len()..];
         for (name, &mut PluginContainer { respond_to_command, .. }) in &mut lis.containers {
             let fresh = cmd.to_owned();
-            match std::panic::recover(move || respond_to_command.unwrap()(&fresh)) {
+            let nick = sender.nickname().clone();
+            match std::panic::recover(move || respond_to_command.unwrap()(&fresh, &nick)) {
                 Ok(msg) => {
                     if !msg.is_empty() {
                         println!("!!! Sending {:?} !!!", msg);

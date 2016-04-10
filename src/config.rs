@@ -42,6 +42,7 @@ impl fmt::Display for ParserErrors {
 pub enum LoadError {
     Io(io::Error),
     Parser(ParserErrors),
+    MissingPluginConfig,
 }
 
 impl Error for LoadError {
@@ -55,6 +56,7 @@ impl fmt::Display for LoadError {
         match *self {
             LoadError::Io(ref err) => write!(f, "{}", err),
             LoadError::Parser(ref err) => write!(f, "{}", err),
+            LoadError::MissingPluginConfig => write!(f, "Missing plugin config"),
         }
     }
 }
@@ -84,7 +86,10 @@ pub fn load_config_for_plugin(name: &str) -> Result<Plugin, LoadError> {
             });
         }
     });
-    Ok(plugin.unwrap())
+    match plugin {
+        Some(plugin) => Ok(plugin),
+        None => Err(LoadError::MissingPluginConfig),
+    }
 }
 
 fn load_file_to_string() -> Result<String, io::Error> {

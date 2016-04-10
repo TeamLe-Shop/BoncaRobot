@@ -6,7 +6,7 @@ use librc::calc::Calc;
 thread_local!(static CALC: RefCell<Calc> = RefCell::new(Calc::new()));
 
 #[no_mangle]
-pub fn respond_to_command(cmd: &str) -> String {
+pub fn respond_to_command(cmd: &str, _sender: &str) -> String {
     CALC.with(|calc| {
         if cmd.starts_with("rc ") {
             let wot = &cmd[3..];

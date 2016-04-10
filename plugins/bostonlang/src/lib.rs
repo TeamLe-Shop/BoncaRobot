@@ -5,7 +5,7 @@ use bostondict::BostonDict;
 thread_local!(static DICT: BostonDict = BostonDict::new());
 
 #[no_mangle]
-pub fn respond_to_command(cmd: &str) -> String {
+pub fn respond_to_command(cmd: &str, _sender: &str) -> String {
     DICT.with(|dict| {
         let b2ecmd = "b2e ";
         let e2bcmd = "e2b ";

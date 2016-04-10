@@ -1,5 +1,5 @@
 #[no_mangle]
-pub fn respond_to_command(cmd: &str) -> String {
+pub fn respond_to_command(cmd: &str, _sender: &str) -> String {
     let shl_command = "shl ";
     let shr_command = "shr ";
     if cmd.starts_with(shl_command) {
