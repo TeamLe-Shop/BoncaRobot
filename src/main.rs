@@ -117,6 +117,9 @@ impl BoncaListener {
     pub fn request_quit(&self) {
         self.irc.as_ref().unwrap().quit(None).unwrap();
     }
+    pub fn msg(&self, target: &str, text: &str) {
+        self.irc.as_ref().unwrap().privmsg(target, text).unwrap();
+    }
 }
 
 #[derive(Clone)]
@@ -242,8 +245,18 @@ fn main() {
 
     loop {
         if let Ok(Ok(command_str)) = sock.recv_string(zmq::DONTWAIT) {
-            match &command_str[..] {
+            let mut words = command_str.split(' ');
+            match words.next().unwrap() {
                 "quit" => listener.0.lock().unwrap().request_quit(),
+                "say" => {
+                    match words.next() {
+                        Some(channel) => {
+                            let msg = words.collect::<Vec<_>>().join(" ");
+                            listener.0.lock().unwrap().msg(channel, &msg);
+                        }
+                        None => println!("Need channel, buddy."),
+                    }
+                }
                 _ => {}
             }
         }
