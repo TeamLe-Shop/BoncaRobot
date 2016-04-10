@@ -150,48 +150,6 @@ impl hiirc::Listener for SyncBoncaListener {
             return;
         }
         let cmd = &message[lis.config.cmd_prefix.len()..];
-        let reload_cmd = "reload-plugin ";
-        let load_cmd = "load-plugin ";
-        let unload_cmd = "unload-plugin ";
-        if cmd.starts_with(reload_cmd) {
-            let name = &cmd[reload_cmd.len()..];
-            match reload_plugin(name, &mut lis.containers) {
-                Ok(()) => {
-                    irc.privmsg(recipient, &format!("Reloaded plugin {}", name))
-                       .unwrap();
-                }
-                Err(e) => {
-                    irc.privmsg(recipient,
-                                &format!("Failed to reload plugin {}: {}", name, e))
-                       .unwrap();
-                }
-            }
-
-        } else if cmd.starts_with(load_cmd) {
-            use std::collections::HashMap;
-            let name = &cmd[load_cmd.len()..];
-            let plugin = config::Plugin {
-                name: name.to_owned(),
-                options: HashMap::new(),
-            };
-            match load_dl_init(&plugin) {
-                Ok(pc) => {
-                    lis.containers.insert(name.to_owned(), pc);
-                    let msg = format!("Loaded \"{}\" plugin.", name);
-                    irc.privmsg(recipient, &msg).unwrap();
-                }
-                Err(e) => {
-                    let msg = format!("Failed to load \"{}\": {}", name, e);
-                    irc.privmsg(recipient, &msg).unwrap();
-                }
-            }
-        } else if cmd.starts_with(unload_cmd) {
-            let name = &cmd[unload_cmd.len()..];
-            if lis.containers.remove(name).is_some() {
-                let msg = format!("Removed \"{}\" plugin.", name);
-                irc.privmsg(recipient, &msg).unwrap();
-            }
-        }
         for (name, &mut PluginContainer { respond_to_command, .. }) in &mut lis.containers {
             let fresh = cmd.to_owned();
             match std::panic::recover(move || respond_to_command.unwrap()(&fresh)) {
@@ -255,6 +213,51 @@ fn main() {
                             listener.0.lock().unwrap().msg(channel, &msg);
                         }
                         None => println!("Need channel, buddy."),
+                    }
+                }
+                "load" => {
+                    use std::collections::HashMap;
+                    match words.next() {
+                        Some(name) => {
+                            let plugin = config::Plugin {
+                                name: name.to_owned(),
+                                options: HashMap::new(),
+                            };
+                            match load_dl_init(&plugin) {
+                                Ok(pc) => {
+                                    let mut lis = listener.0.lock().unwrap();
+                                    lis.containers.insert(name.to_owned(), pc);
+                                    println!("Loaded \"{}\" plugin.", name);
+                                }
+                                Err(e) => {
+                                    println!("Failed to load \"{}\": {}", name, e);
+                                }
+                            }
+                        }
+                        None => println!("Name, please!"),
+                    }
+                }
+                "unload" => {
+                    match words.next() {
+                        Some(name) => {
+                            let mut lis = listener.0.lock().unwrap();
+                            if lis.containers.remove(name).is_some() {
+                                println!("Removed \"{}\" plugin.", name);
+                            }
+                        }
+                        None => println!("Don't forget the name!"),
+                    }
+                }
+                "reload" => {
+                    match words.next() {
+                        Some(name) => {
+                            let mut lis = listener.0.lock().unwrap();
+                            match reload_plugin(name, &mut lis.containers) {
+                                Ok(()) => println!("Reloaded plugin {}", name),
+                                Err(e) => println!("Failed to reload plugin {}: {}", name, e),
+                            }
+                        }
+                        None => println!("Need a name, faggot"),
                     }
                 }
                 _ => {}
