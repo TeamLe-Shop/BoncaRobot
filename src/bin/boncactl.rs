@@ -26,5 +26,7 @@ fn main() {
                 }
             }
         }
+    } else {
+        sock.send_str(&command_str, zmq::DONTWAIT).unwrap();
     }
 }
