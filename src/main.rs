@@ -1,15 +1,18 @@
 #![feature(recover)]
 
-extern crate irc;
+extern crate hiirc;
 extern crate toml;
 extern crate dylib;
+extern crate zmq;
 
-use irc::client::prelude::*;
 use dylib::DynamicLibrary;
 use std::path::Path;
 use std::error::Error;
 use std::fmt;
 use std::collections::HashMap;
+use std::sync::{Arc, Mutex};
+use hiirc::IrcWrite;
+use std::thread;
 
 mod config;
 
@@ -19,6 +22,9 @@ struct PluginContainer {
     respond_to_command: Option<RespondToCommand>,
     dylib: Option<DynamicLibrary>,
 }
+
+// TODO: This is hugely unsafe, don't touch dylibs from two different threads
+unsafe impl Send for PluginContainer {}
 
 impl Drop for PluginContainer {
     fn drop(&mut self) {
@@ -87,6 +93,120 @@ fn load_dl_init(plugin: &config::Plugin) -> Result<PluginContainer, Box<Error>> 
     })
 }
 
+struct BoncaListener {
+    config: config::Config,
+    containers: HashMap<String, PluginContainer>,
+    irc: Option<Arc<hiirc::Irc>>,
+}
+
+impl BoncaListener {
+    pub fn new(config: config::Config) -> Self {
+        // Load plugins
+        let mut containers = HashMap::new();
+
+        for plugin in &config.plugins {
+            containers.insert(plugin.name.clone(), load_dl_init(&plugin).unwrap());
+        }
+
+        BoncaListener {
+            config: config,
+            containers: containers,
+            irc: None,
+        }
+    }
+    pub fn request_quit(&self) {
+        self.irc.as_ref().unwrap().quit(None).unwrap();
+    }
+}
+
+#[derive(Clone)]
+struct SyncBoncaListener(Arc<Mutex<BoncaListener>>);
+
+impl SyncBoncaListener {
+    pub fn new(config: config::Config) -> Self {
+        SyncBoncaListener(Arc::new(Mutex::new(BoncaListener::new(config))))
+    }
+}
+
+impl hiirc::Listener for SyncBoncaListener {
+    fn welcome(&mut self, irc: Arc<hiirc::Irc>) {
+        let mut lis = self.0.lock().unwrap();
+        lis.irc = Some(irc.clone());
+        for c in &lis.config.channels {
+            irc.join(c, None).unwrap();
+        }
+    }
+    fn channel_msg(&mut self,
+                   irc: Arc<hiirc::Irc>,
+                   channel: Arc<hiirc::Channel>,
+                   _sender: Arc<hiirc::ChannelUser>,
+                   message: &str) {
+        let mut lis = self.0.lock().unwrap();
+        let recipient = channel.name();
+        if !message.starts_with(&lis.config.cmd_prefix) {
+            return;
+        }
+        let cmd = &message[lis.config.cmd_prefix.len()..];
+        let reload_cmd = "reload-plugin ";
+        let load_cmd = "load-plugin ";
+        let unload_cmd = "unload-plugin ";
+        if cmd.starts_with(reload_cmd) {
+            let name = &cmd[reload_cmd.len()..];
+            match reload_plugin(name, &mut lis.containers) {
+                Ok(()) => {
+                    irc.privmsg(recipient, &format!("Reloaded plugin {}", name))
+                       .unwrap();
+                }
+                Err(e) => {
+                    irc.privmsg(recipient,
+                                &format!("Failed to reload plugin {}: {}", name, e))
+                       .unwrap();
+                }
+            }
+
+        } else if cmd.starts_with(load_cmd) {
+            use std::collections::HashMap;
+            let name = &cmd[load_cmd.len()..];
+            let plugin = config::Plugin {
+                name: name.to_owned(),
+                options: HashMap::new(),
+            };
+            match load_dl_init(&plugin) {
+                Ok(pc) => {
+                    lis.containers.insert(name.to_owned(), pc);
+                    let msg = format!("Loaded \"{}\" plugin.", name);
+                    irc.privmsg(recipient, &msg).unwrap();
+                }
+                Err(e) => {
+                    let msg = format!("Failed to load \"{}\": {}", name, e);
+                    irc.privmsg(recipient, &msg).unwrap();
+                }
+            }
+        } else if cmd.starts_with(unload_cmd) {
+            let name = &cmd[unload_cmd.len()..];
+            if lis.containers.remove(name).is_some() {
+                let msg = format!("Removed \"{}\" plugin.", name);
+                irc.privmsg(recipient, &msg).unwrap();
+            }
+        }
+        for (name, &mut PluginContainer { respond_to_command, .. }) in &mut lis.containers {
+            let fresh = cmd.to_owned();
+            match std::panic::recover(move || respond_to_command.unwrap()(&fresh)) {
+                Ok(msg) => {
+                    if !msg.is_empty() {
+                        println!("!!! Sending {:?} !!!", msg);
+                        irc.privmsg(recipient, &msg).unwrap();
+                    }
+                }
+                Err(_) => {
+                    let errmsg = format!("Plugin \"{}\" panicked.", name);
+                    let _ = irc.privmsg(recipient, &errmsg);
+                }
+            }
+        }
+    }
+}
+
 fn main() {
     // If the configuration file does not exist, try copying over the template.
     if !std::path::Path::new(config::PATH).exists() {
@@ -101,96 +221,31 @@ fn main() {
                  config::PATH);
         return;
     }
+
     let config = config::load().unwrap();
 
-    // Load plugins
-    let mut containers: HashMap<String, PluginContainer> = HashMap::new();
+    let mut server = config.server.clone();
+    server.push_str(":6667");
+    let nick = config.nick.clone();
 
-    for plugin in config.plugins {
-        containers.insert(plugin.name.clone(), load_dl_init(&plugin).unwrap());
-    }
+    let listener = SyncBoncaListener::new(config);
+    let listener_clone = listener.clone();
+    thread::spawn(move || {
+        let settings = hiirc::Settings::new(&server, &nick);
+        settings.dispatch(listener_clone)
+                .unwrap_or_else(|e| panic!("Failed to dispatch: {:?}", e));
+    });
 
-    let my_nick = config.irc.nickname().to_owned();
-    let serv = IrcServer::from_config(config.irc).unwrap();
-    serv.identify().unwrap();
+    let mut zmq_ctx = zmq::Context::new();
+    let mut sock = zmq_ctx.socket(zmq::SocketType::PULL).unwrap();
+    sock.bind("ipc:///tmp/boncarobot.sock").unwrap();
 
-    for msg in serv.iter().map(|m| m.unwrap()) {
-        println!("{:#?}", msg);
-        match msg.command {
-            Command::PING(srv1, srv2) => serv.send(Command::PONG(srv1, srv2)).unwrap(),
-            Command::PRIVMSG(ref target, ref message) => {
-                let recipient = if *target == my_nick {
-                    match msg.source_nickname() {
-                        Some(nick) => nick,
-                        // We don't know who to reply to, so we bail out
-                        None => continue,
-                    }
-                } else {
-                    &target[..]
-                };
-                if !message.starts_with(&config.cmd_prefix) {
-                    continue;
-                }
-                let cmd = &message[config.cmd_prefix.len()..];
-                let reload_cmd = "reload-plugin ";
-                let load_cmd = "load-plugin ";
-                let unload_cmd = "unload-plugin ";
-                if cmd.starts_with(reload_cmd) {
-                    let name = &cmd[reload_cmd.len()..];
-                    match reload_plugin(name, &mut containers) {
-                        Ok(()) => {
-                            serv.send_privmsg(recipient, &format!("Reloaded plugin {}", name))
-                                .unwrap();
-                        }
-                        Err(e) => {
-                            serv.send_privmsg(recipient,
-                                              &format!("Failed to reload plugin {}: {}", name, e))
-                                .unwrap();
-                        }
-                    }
-
-                } else if cmd.starts_with(load_cmd) {
-                    use std::collections::HashMap;
-                    let name = &cmd[load_cmd.len()..];
-                    let plugin = config::Plugin {
-                        name: name.to_owned(),
-                        options: HashMap::new(),
-                    };
-                    match load_dl_init(&plugin) {
-                        Ok(pc) => {
-                            containers.insert(name.to_owned(), pc);
-                            let msg = format!("Loaded \"{}\" plugin.", name);
-                            serv.send_privmsg(recipient, &msg).unwrap();
-                        }
-                        Err(e) => {
-                            let msg = format!("Failed to load \"{}\": {}", name, e);
-                            serv.send_privmsg(recipient, &msg).unwrap();
-                        }
-                    }
-                } else if cmd.starts_with(unload_cmd) {
-                    let name = &cmd[unload_cmd.len()..];
-                    if containers.remove(name).is_some() {
-                        let msg = format!("Removed \"{}\" plugin.", name);
-                        serv.send_privmsg(recipient, &msg).unwrap();
-                    }
-                }
-                for (name, &mut PluginContainer { respond_to_command, .. }) in &mut containers {
-                    let fresh = cmd.to_owned();
-                    match std::panic::recover(move || respond_to_command.unwrap()(&fresh)) {
-                        Ok(msg) => {
-                            if !msg.is_empty() {
-                                println!("!!! Sending {:?} !!!", msg);
-                                serv.send_privmsg(recipient, &msg).unwrap();
-                            }
-                        }
-                        Err(_) => {
-                            let errmsg = format!("Plugin \"{}\" panicked.", name);
-                            let _ = serv.send_privmsg(recipient, &errmsg);
-                        }
-                    }
-                }
+    loop {
+        if let Ok(Ok(command_str)) = sock.recv_string(zmq::DONTWAIT) {
+            match &command_str[..] {
+                "quit" => listener.0.lock().unwrap().request_quit(),
+                _ => {}
             }
-            _ => {}
         }
     }
 }

@@ -4,6 +4,7 @@ version = "0.1.0"
 authors = ["Mika Attila <radiantstatue@gmail.com>"]
 
 [dependencies]
-irc = "0.11.1"
+hiirc = "0.4.0"
 toml = "0.1.28"
 dylib = "0.0.2"
+zmq = { git = "https://github.com/erickt/rust-zmq.git" }

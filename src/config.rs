@@ -1,4 +1,3 @@
-use irc::client::prelude::Config as IrcConfig;
 use std::io;
 use std::io::prelude::*;
 use toml::ParserError;
@@ -13,9 +12,11 @@ pub struct Plugin {
 }
 
 pub struct Config {
-    pub irc: IrcConfig,
     pub cmd_prefix: String,
     pub plugins: Vec<Plugin>,
+    pub channels: Vec<String>,
+    pub nick: String,
+    pub server: String,
 }
 
 #[derive(Debug)]
@@ -133,32 +134,29 @@ fn for_each_plugin<F: FnMut(&String, &toml::Table)>(table: &toml::Table, mut f: 
 pub fn load() -> Result<Config, LoadError> {
     use toml::Value;
     let table = try!(load_toml());
-    let mut config = IrcConfig {
-        server: Some("chat.freenode.net".to_owned()),
-        nickname: Some("boncarobot".to_owned()),
-        channels: Some(vec!["#boncarobot".to_owned()]),
-        ..Default::default()
-    };
-    if let Some(&Value::Table(ref server)) = table.get("server") {
-        if let Some(&Value::String(ref url)) = server.get("url") {
-            config.server = Some(url.clone());
+    let mut server = "chat.freenode.net".to_owned();
+    let mut nick = "boncarobot".to_owned();
+    let mut channels = vec!["#boncarobot".to_owned()];
+    if let Some(&Value::Table(ref server_table)) = table.get("server") {
+        if let Some(&Value::String(ref url)) = server_table.get("url") {
+            server = url.clone();
         }
     }
     let mut cmd_prefix = String::new();
     if let Some(&Value::Table(ref bot)) = table.get("bot") {
-        if let Some(&Value::String(ref nick)) = bot.get("nick") {
-            config.nickname = Some(nick.clone());
+        if let Some(&Value::String(ref nick_toml)) = bot.get("nick") {
+            nick = nick_toml.clone();
         }
         if let Some(&Value::Array(ref array)) = bot.get("channels") {
-            let mut channels = Vec::new();
+            let mut vec = Vec::new();
 
             for v in array.iter() {
                 if let Value::String(ref channel) = *v {
-                    channels.push(channel.clone());
+                    vec.push(channel.clone());
                 }
             }
 
-            config.channels = Some(channels);
+            channels = vec;
         }
         if let Some(&Value::String(ref string)) = bot.get("command-prefix") {
             cmd_prefix = string.clone();
@@ -172,8 +170,10 @@ pub fn load() -> Result<Config, LoadError> {
         })
     });
     Ok(Config {
-        irc: config,
         cmd_prefix: cmd_prefix,
         plugins: plugins_vec,
+        channels: channels,
+        nick: nick,
+        server: server,
     })
 }
