@@ -260,5 +260,7 @@ fn main() {
                 _ => {}
             }
         }
+        // Don't overwork ourselves
+        thread::sleep(std::time::Duration::from_millis(250));
     }
 }
