@@ -19,7 +19,8 @@ fn main() {
                 }
                 Err(e) => {
                     match e {
-                        ReadlineError::Eof | ReadlineError::Interrupted => {}
+                        ReadlineError::Eof |
+                        ReadlineError::Interrupted => {}
                         _ => panic!("error: {}", e),
                     }
                     return;

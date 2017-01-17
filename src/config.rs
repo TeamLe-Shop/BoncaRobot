@@ -1,10 +1,11 @@
-use std::io;
-use std::io::prelude::*;
-use toml::ParserError;
+
+use std::collections::HashMap;
 use std::error::Error;
 use std::fmt;
-use std::collections::HashMap;
+use std::io;
+use std::io::prelude::*;
 use toml;
+use toml::ParserError;
 
 pub struct Plugin {
     pub name: String,

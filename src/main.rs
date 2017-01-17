@@ -6,12 +6,12 @@ extern crate dylib;
 extern crate zmq;
 
 use dylib::DynamicLibrary;
-use std::path::Path;
+use hiirc::IrcWrite;
+use std::collections::HashMap;
 use std::error::Error;
 use std::fmt;
-use std::collections::HashMap;
+use std::path::Path;
 use std::sync::{Arc, Mutex};
-use hiirc::IrcWrite;
 use std::thread;
 
 mod config;
@@ -71,7 +71,7 @@ fn reload_plugin(name: &str,
                  containers: &mut HashMap<String, PluginContainer>)
                  -> Result<(), Box<Error>> {
     let mut cont = try!(containers.get_mut(name)
-                                  .ok_or(NoSuchPluginError { name: name.into() }));
+        .ok_or(NoSuchPluginError { name: name.into() }));
     // Reload the configuration
     let cfg = match config::load_config_for_plugin(name) {
         Ok(config) => config,
@@ -92,10 +92,11 @@ fn reload_plugin(name: &str,
 fn load_dl_init(plugin: &config::Plugin) -> Result<PluginContainer, Box<Error>> {
     let path = format!("plugins/{0}/target/release/lib{0}.so", plugin.name);
     let dl = try!(DynamicLibrary::open(Some(&Path::new(&path))).map_err(|e| DylibError { err: e }));
-    let respond_to_command: RespondToCommand = unsafe {
-        std::mem::transmute(try!(dl.symbol::<()>("respond_to_command")
-                                   .map_err(|e| DylibError { err: e })))
-    };
+    let respond_to_command: RespondToCommand =
+        unsafe {
+            std::mem::transmute(try!(dl.symbol::<()>("respond_to_command")
+                .map_err(|e| DylibError { err: e })))
+        };
     Ok(PluginContainer {
         respond_to_command: Some(respond_to_command),
         dylib: Some(dl),
@@ -204,7 +205,7 @@ fn main() {
     thread::spawn(move || {
         let settings = hiirc::Settings::new(&server, &nick);
         settings.dispatch(listener_clone)
-                .unwrap_or_else(|e| panic!("Failed to dispatch: {:?}", e));
+            .unwrap_or_else(|e| panic!("Failed to dispatch: {:?}", e));
     });
 
     let mut zmq_ctx = zmq::Context::new();
