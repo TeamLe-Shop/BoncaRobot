@@ -10,7 +10,7 @@ fn main() {
     let command_str = std::env::args().skip(1).collect::<Vec<_>>().join(" ");
     sock.connect("ipc:///tmp/boncarobot.sock").unwrap();
     if command_str.is_empty() {
-        let mut editor = Editor::new();
+        let mut editor = Editor::<()>::new();
         loop {
             match editor.readline("> ") {
                 Ok(line) => {
