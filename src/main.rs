@@ -113,7 +113,7 @@ impl BoncaListener {
         let mut containers = HashMap::new();
 
         for plugin in &config.plugins {
-            containers.insert(plugin.name.clone(), load_dl_init(&plugin).unwrap());
+            containers.insert(plugin.name.clone(), load_dl_init(plugin).unwrap());
         }
 
         BoncaListener {
