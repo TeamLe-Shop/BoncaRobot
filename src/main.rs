@@ -1,5 +1,3 @@
-#![feature(recover)]
-
 extern crate hiirc;
 extern crate toml;
 extern crate dylib;
@@ -163,7 +161,7 @@ impl hiirc::Listener for SyncBoncaListener {
         for (name, &mut PluginContainer { respond_to_command, .. }) in &mut lis.containers {
             let fresh = cmd.to_owned();
             let nick = sender.nickname().clone();
-            match std::panic::recover(move || respond_to_command.unwrap()(&fresh, &nick)) {
+            match std::panic::catch_unwind(move || respond_to_command.unwrap()(&fresh, &nick)) {
                 Ok(msg) => {
                     if !msg.is_empty() {
                         println!("!!! Sending {:?} !!!", msg);
@@ -208,8 +206,8 @@ fn main() {
             .unwrap_or_else(|e| panic!("Failed to dispatch: {:?}", e));
     });
 
-    let mut zmq_ctx = zmq::Context::new();
-    let mut sock = zmq_ctx.socket(zmq::SocketType::PULL).unwrap();
+    let zmq_ctx = zmq::Context::new();
+    let sock = zmq_ctx.socket(zmq::SocketType::PULL).unwrap();
     sock.bind("ipc:///tmp/boncarobot.sock").unwrap();
 
     loop {

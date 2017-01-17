@@ -10,3 +10,5 @@ name = "librc"
 version = "0.1.0"
 source = "git+https://github.com/crumblingstatue/rc.git#f2cc14eaf4b8021a577aa1c8a6a3579235d072cd"
 
+[metadata]
+"checksum librc 0.1.0 (git+https://github.com/crumblingstatue/rc.git)" = "<none>"
