@@ -207,12 +207,15 @@ fn main() {
     });
 
     let zmq_ctx = zmq::Context::new();
-    let sock = zmq_ctx.socket(zmq::SocketType::PULL).unwrap();
+    let sock = zmq_ctx.socket(zmq::SocketType::REP).unwrap();
     sock.bind("ipc:///tmp/boncarobot.sock").unwrap();
 
     loop {
         if let Ok(Ok(command_str)) = sock.recv_string(zmq::DONTWAIT) {
+            use std::fmt::Write;
+
             let mut words = command_str.split(' ');
+            let mut reply = String::new();
             match words.next().unwrap() {
                 "quit" => listener.0.lock().unwrap().request_quit(),
                 "say" => {
@@ -221,7 +224,7 @@ fn main() {
                             let msg = words.collect::<Vec<_>>().join(" ");
                             listener.0.lock().unwrap().msg(channel, &msg);
                         }
-                        None => println!("Need channel, buddy."),
+                        None => writeln!(&mut reply, "Need channel, buddy.").unwrap(),
                     }
                 }
                 "load" => {
@@ -236,14 +239,15 @@ fn main() {
                                 Ok(pc) => {
                                     let mut lis = listener.0.lock().unwrap();
                                     lis.containers.insert(name.to_owned(), pc);
-                                    println!("Loaded \"{}\" plugin.", name);
+                                    writeln!(&mut reply, "Loaded \"{}\" plugin.", name).unwrap();
                                 }
                                 Err(e) => {
-                                    println!("Failed to load \"{}\": {}", name, e);
+                                    writeln!(&mut reply, "Failed to load \"{}\": {}", name, e)
+                                        .unwrap();
                                 }
                             }
                         }
-                        None => println!("Name, please!"),
+                        None => writeln!(&mut reply, "Name, please!").unwrap(),
                     }
                 }
                 "unload" => {
@@ -251,10 +255,10 @@ fn main() {
                         Some(name) => {
                             let mut lis = listener.0.lock().unwrap();
                             if lis.containers.remove(name).is_some() {
-                                println!("Removed \"{}\" plugin.", name);
+                                writeln!(&mut reply, "Removed \"{}\" plugin.", name).unwrap();
                             }
                         }
-                        None => println!("Don't forget the name!"),
+                        None => writeln!(&mut reply, "Don't forget the name!").unwrap(),
                     }
                 }
                 "reload" => {
@@ -262,15 +266,19 @@ fn main() {
                         Some(name) => {
                             let mut lis = listener.0.lock().unwrap();
                             match reload_plugin(name, &mut lis.containers) {
-                                Ok(()) => println!("Reloaded plugin {}", name),
-                                Err(e) => println!("Failed to reload plugin {}: {}", name, e),
+                                Ok(()) => writeln!(&mut reply, "Reloaded plugin {}", name).unwrap(),
+                                Err(e) => {
+                                    writeln!(&mut reply, "Failed to reload plugin {}: {}", name, e)
+                                        .unwrap()
+                                }
                             }
                         }
-                        None => println!("Need a name, faggot"),
+                        None => writeln!(&mut reply, "Need a name, faggot").unwrap(),
                     }
                 }
-                _ => {}
+                _ => writeln!(&mut reply, "Unknown command, bro.").unwrap(),
             }
+            sock.send(&reply, 0).unwrap();
         }
         // Don't overwork ourselves
         thread::sleep(std::time::Duration::from_millis(250));
