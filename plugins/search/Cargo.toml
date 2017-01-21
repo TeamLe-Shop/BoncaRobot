@@ -1,13 +1,15 @@
 [package]
-name = "bostonlang"
+name = "search"
 version = "0.1.0"
 authors = ["Mika Attila <radiantstatue@gmail.com>"]
 
 [dependencies]
-bostondict = { git = "https://github.com/TeamLe-Shop/bostondict.git" }
+hyper = "*"
+scraper = "*"
+url = "*"
 
 [lib]
-name = "bostonlang"
+name = "search"
 crate-type = ["dylib"]
 # This is important, makes it so that the lib is compiled with
 # rustc -C prefer-dynamic, which is required for

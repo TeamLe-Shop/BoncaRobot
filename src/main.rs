@@ -88,7 +88,11 @@ fn reload_plugin(name: &str,
 }
 
 fn load_dl_init(plugin: &config::Plugin) -> Result<PluginContainer, Box<Error>> {
-    let path = format!("plugins/{0}/target/release/lib{0}.so", plugin.name);
+    #[cfg(debug_assertions)]
+    let root = "target/debug";
+    #[cfg(not(debug_assertions))]
+    let root = "target/release";
+    let path = format!("{}/lib{}.so", root, plugin.name);
     let dl = try!(DynamicLibrary::open(Some(&Path::new(&path))).map_err(|e| DylibError { err: e }));
     let respond_to_command: RespondToCommand =
         unsafe {

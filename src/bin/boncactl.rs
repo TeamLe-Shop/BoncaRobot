@@ -30,6 +30,8 @@ fn main() {
             }
         }
     } else {
-        sock.send(&command_str, zmq::DONTWAIT).unwrap();
+        sock.send(&command_str, 0).unwrap();
+        let reply = sock.recv_string(0).unwrap().unwrap();
+        println!("{}", reply);
     }
 }

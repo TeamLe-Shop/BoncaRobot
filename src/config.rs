@@ -78,13 +78,11 @@ pub const PATH: &'static str = "boncarobot.toml";
 pub fn load_config_for_plugin(name: &str) -> Result<Plugin, LoadError> {
     let table = try!(load_toml());
     let mut plugin: Option<Plugin> = None;
-    for_each_plugin(&table, |plugin_name, options| {
-        if name == plugin_name {
-            plugin = Some(Plugin {
-                name: name.to_owned(),
-                options: get_plugin_opts(options),
-            });
-        }
+    for_each_plugin(&table, |plugin_name, options| if name == plugin_name {
+        plugin = Some(Plugin {
+            name: name.to_owned(),
+            options: get_plugin_opts(options),
+        });
     });
     match plugin {
         Some(plugin) => Ok(plugin),
