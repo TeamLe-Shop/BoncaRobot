@@ -2,13 +2,11 @@ extern crate hyper;
 extern crate scraper;
 extern crate url;
 
-use hyper::Client;
-use scraper::{Html, Selector};
 use std::error::Error;
 use std::io::prelude::*;
 
-pub fn do_search(query: &str) -> Result<String, Box<Error>> {
-    let client = Client::new();
+pub fn query_google(query: &str) -> Result<String, Box<Error>> {
+    let client = hyper::Client::new();
 
     let msg = format!("http://www.google.com/search?q={}", query);
 
@@ -18,8 +16,13 @@ pub fn do_search(query: &str) -> Result<String, Box<Error>> {
     }
     let mut body = Vec::new();
     res.read_to_end(&mut body)?;
-    let utf8 = String::from_utf8_lossy(&body).into_owned();
-    let html = Html::parse_document(&utf8);
+    Ok(String::from_utf8_lossy(&body).into_owned())
+}
+
+pub fn parse_first_result(body: &str) -> Result<String, Box<Error>> {
+    use scraper::{Html, Selector};
+
+    let html = Html::parse_document(&body);
     let sel = Selector::parse("h3").map_err(|()| "Couldn't find h3 selectors or some shit.")?;
 
     for element in html.select(&sel) {
@@ -54,9 +57,20 @@ pub fn respond_to_command(cmd: &str, _sender: &str) -> String {
         if wot.is_empty() {
             return "Empty search? Impossible!".into();
         }
-        match do_search(wot) {
-            Ok(result) => return result,
-            Err(e) => return format!("Error: {}", e),
+        match query_google(wot) {
+            Ok(body) => match parse_first_result(&body) {
+                Ok(result) => return result,
+                Err(e) => {
+                    use std::fs::File;
+
+                    let path = "dump.txt";
+                    let mut file = File::create(path).unwrap();
+                    file.write_all(body.as_bytes()).unwrap();
+                    println!("CORE DUMPED ({})", path);
+                    return format!("Error: {}", e)
+                },
+            },
+            Err(e) => return format!("Error when googuring: {}", e)
         }
     }
     return "".into();
