@@ -23,28 +23,19 @@ pub fn parse_first_result(body: &str) -> Result<String, Box<Error>> {
     use scraper::{Html, Selector};
 
     let html = Html::parse_document(&body);
-    let sel = Selector::parse("h3").map_err(|()| "Couldn't find h3 selectors or some shit.")?;
+    let sel = Selector::parse("cite").unwrap();
+    let cite = html.select(&sel).next().ok_or("There should be a <cite>, but there isn't")?;
+    Ok(cite.text().next().ok_or("Wat. <cite> has no text.")?.to_owned())
+}
 
-    for element in html.select(&sel) {
-        let a = element.select(&Selector::parse("a").map_err(|()| "Could not find <a>. Dunno.")?)
-                       .next().ok_or("Could not find <a>. Dunno m8.")?;
-        let link = a.value().attr("href").ok_or("No href in the <a>? What the fuck?")?;
-        let begin = link.find("q=").ok_or("Need some q= shit. It's how it works, don't ask me.")?;
-        let end = link.find("&sa=")
-            .ok_or("This &sa= bullshit. Don't ask me what it is, but I expected it and couldn't \
-                    find it.")?;
-        let s = &link[begin + 2..end];
-        let decoded = url::percent_encoding::percent_decode(s.as_bytes()).decode_utf8()?;
-        if !decoded.starts_with("http") {
-            return Err(format!("Doesn't start with http: {}. Nag SneakySnake to fix eet",
-                               decoded)
-                .into());
-        }
-        return Ok(decoded.into_owned());
-    }
-    Err("Could find any h3 paragraphs. Blame google for not providing a search API causing me to \
-         parse HTML half-arsedly."
-        .into())
+#[test]
+#[ignore]
+fn test_parse_first_result_on_dump() {
+    use std::fs::File;
+    let mut f = File::open("../../dump.txt").unwrap();
+    let mut body = String::new();
+    f.read_to_string(&mut body).unwrap();
+    println!("{:?}", parse_first_result(&body));
 }
 
 #[no_mangle]
@@ -58,19 +49,21 @@ pub fn respond_to_command(cmd: &str, _sender: &str) -> String {
             return "Empty search? Impossible!".into();
         }
         match query_google(wot) {
-            Ok(body) => match parse_first_result(&body) {
-                Ok(result) => return result,
-                Err(e) => {
-                    use std::fs::File;
+            Ok(body) => {
+                match parse_first_result(&body) {
+                    Ok(result) => return result,
+                    Err(e) => {
+                        use std::fs::File;
 
-                    let path = "dump.txt";
-                    let mut file = File::create(path).unwrap();
-                    file.write_all(body.as_bytes()).unwrap();
-                    println!("CORE DUMPED ({})", path);
-                    return format!("Error: {}", e)
-                },
-            },
-            Err(e) => return format!("Error when googuring: {}", e)
+                        let path = "dump.txt";
+                        let mut file = File::create(path).unwrap();
+                        file.write_all(body.as_bytes()).unwrap();
+                        println!("CORE DUMPED ({})", path);
+                        return format!("Error: {}", e);
+                    }
+                }
+            }
+            Err(e) => return format!("Error when googuring: {}", e),
         }
     }
     return "".into();
