@@ -32,6 +32,11 @@ pub fn do_search(query: &str) -> Result<String, Box<Error>> {
                     find it.")?;
         let s = &link[begin + 2..end];
         let decoded = url::percent_encoding::percent_decode(s.as_bytes()).decode_utf8()?;
+        if !decoded.starts_with("http") {
+            return Err(format!("Doesn't start with http: {}. Nag SneakySnake to fix eet",
+                               decoded)
+                .into());
+        }
         return Ok(decoded.into_owned());
     }
     Err("Could find any h3 paragraphs. Blame google for not providing a search API causing me to \
