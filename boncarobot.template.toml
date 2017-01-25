@@ -13,7 +13,7 @@ channels = ["#boncarobot"]
 command-prefix = ""
 
 [plugins.shift]
-# Optional custom path. By default, it searches in ./plugins/<name>/target/release`.
+# Optional custom path. By default, it looks for `target/release/libpluginname.so`.
 # path = "plugins/shift/target/release/libshift.so"
 # Custom configuration for the plugin
 shl-command = "shl"
