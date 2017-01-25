@@ -50,21 +50,20 @@ pub fn respond_to_command(cmd: &str, _sender: &str) -> String {
         }
         match query_google(wot) {
             Ok(body) => {
-                match parse_first_result(&body) {
-                    Ok(result) => return result,
-                    Err(e) => {
-                        use std::fs::File;
+                use std::fs::File;
 
-                        let path = "dump.txt";
-                        let mut file = File::create(path).unwrap();
-                        file.write_all(body.as_bytes()).unwrap();
-                        println!("CORE DUMPED ({})", path);
-                        return format!("Error: {}", e);
-                    }
+                let path = "dump.txt";
+                let mut file = File::create(path).unwrap();
+                file.write_all(body.as_bytes()).unwrap();
+
+                match parse_first_result(&body) {
+                    Ok(result) => result,
+                    Err(e) => format!("Error: {}", e),
                 }
             }
-            Err(e) => return format!("Error when googuring: {}", e),
+            Err(e) => format!("Error when googuring: {}", e),
         }
+    } else {
+        "".into()
     }
-    return "".into();
 }
