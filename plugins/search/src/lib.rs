@@ -40,12 +40,18 @@ pub fn parse_first_result(body: &str) -> Result<String, Box<Error>> {
 
     let html = Html::parse_document(body);
     let sel = Selector::parse("h3.r").unwrap();
-    let h3 = html.select(&sel).next().ok_or("There should be a h3 class=\"r\", but there isn't")?;
-    let sel = Selector::parse("a").unwrap();
-    let a = h3.select(&sel).next().ok_or("There should be a <a>, but there isn't")?;
-    let href = a.value().attr("href").ok_or("<a> should have a href, but it doesn't")?;
-    let href = url::percent_encoding::percent_decode(href.as_bytes()).decode_utf8()?;
-    Ok(parse_href(&href)?.to_owned())
+    let mut h3s = html.select(&sel);
+    loop {
+        let h3 = h3s.next().ok_or("There should be a h3 class=\"r\", but there isn't")?;
+        let sel = Selector::parse("a").unwrap();
+        let a = h3.select(&sel).next().ok_or("There should be a <a>, but there isn't")?;
+        let href = a.value().attr("href").ok_or("<a> should have a href, but it doesn't")?;
+        let href = url::percent_encoding::percent_decode(href.as_bytes()).decode_utf8()?;
+        if href.starts_with("/search?q=") {
+            continue;
+        }
+        return Ok(parse_href(&href)?.to_owned());
+    }
 }
 
 #[test]
