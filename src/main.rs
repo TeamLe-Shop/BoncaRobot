@@ -169,7 +169,13 @@ impl hiirc::Listener for SyncBoncaListener {
                 Ok(msg) => {
                     if !msg.is_empty() {
                         println!("!!! Sending {:?} !!!", msg);
-                        irc.privmsg(recipient, &msg).unwrap();
+                        if let Err(e) = irc.privmsg(recipient, &msg) {
+                            println!("Error sending: {:?}", e);
+                            let msg = format!("[something went wrong when trying to send \
+                                               message: {:?}]",
+                                              e);
+                            let _ = irc.privmsg(recipient, &msg);
+                        }
                     }
                 }
                 Err(_) => {
