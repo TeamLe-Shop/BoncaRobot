@@ -167,14 +167,16 @@ impl hiirc::Listener for SyncBoncaListener {
             let nick = sender.nickname().clone();
             match std::panic::catch_unwind(move || respond_to_command.unwrap()(&fresh, &nick)) {
                 Ok(msg) => {
-                    if !msg.is_empty() {
-                        println!("!!! Sending {:?} !!!", msg);
-                        if let Err(e) = irc.privmsg(recipient, &msg) {
-                            println!("Error sending: {:?}", e);
-                            let msg = format!("[something went wrong when trying to send \
-                                               message: {:?}]",
-                                              e);
-                            let _ = irc.privmsg(recipient, &msg);
+                    for msg in msg.lines() {
+                        if !msg.is_empty() {
+                            println!("!!! Sending {:?} !!!", msg);
+                            if let Err(e) = irc.privmsg(recipient, &msg) {
+                                println!("Error sending: {:?}", e);
+                                let msg = format!("[something went wrong when trying to send \
+                                                   message: {:?}]",
+                                                  e);
+                                let _ = irc.privmsg(recipient, &msg);
+                            }
                         }
                     }
                 }
