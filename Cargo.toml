@@ -6,7 +6,7 @@ authors = ["Mika Attila <radiantstatue@gmail.com>"]
 [dependencies]
 hiirc = "0.4.0"
 toml = "0.2"
-dylib = "0.0.2"
+libloading = "0.3.2"
 zmq = { git = "https://github.com/erickt/rust-zmq.git" }
 rustyline = "1.0.0"
 

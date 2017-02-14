@@ -1,75 +1,19 @@
 extern crate hiirc;
 extern crate toml;
-extern crate dylib;
+extern crate libloading;
 extern crate zmq;
 
-use dylib::DynamicLibrary;
 use hiirc::IrcWrite;
+use libloading::{Library, Symbol};
 use std::collections::HashMap;
 use std::error::Error;
-use std::fmt;
-use std::path::Path;
 use std::sync::{Arc, Mutex};
 use std::thread;
 
 mod config;
 
-type RespondToCommand = fn(cmd: &str, sender: &str) -> String;
-
-struct PluginContainer {
-    respond_to_command: Option<RespondToCommand>,
-    dylib: Option<DynamicLibrary>,
-}
-
-// TODO: This is hugely unsafe, don't touch dylibs from two different threads
-unsafe impl Send for PluginContainer {}
-
-impl Drop for PluginContainer {
-    fn drop(&mut self) {
-        drop(self.respond_to_command.take());
-        drop(self.dylib.take());
-    }
-}
-
-#[derive(Debug)]
-struct NoSuchPluginError {
-    name: String,
-}
-
-impl fmt::Display for NoSuchPluginError {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "No such plugin: {:?}", self.name)
-    }
-}
-
-impl Error for NoSuchPluginError {
-    fn description(&self) -> &str {
-        "No such plugin"
-    }
-}
-
-#[derive(Debug)]
-struct DylibError {
-    err: String,
-}
-
-impl fmt::Display for DylibError {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "Dylib error: {}", self.err)
-    }
-}
-
-impl Error for DylibError {
-    fn description(&self) -> &str {
-        "Dynamic library error"
-    }
-}
-
-fn reload_plugin(name: &str,
-                 containers: &mut HashMap<String, PluginContainer>)
-                 -> Result<(), Box<Error>> {
-    let mut cont = try!(containers.get_mut(name)
-        .ok_or(NoSuchPluginError { name: name.into() }));
+fn reload_plugin(name: &str, libs: &mut HashMap<String, Library>) -> Result<(), Box<Error>> {
+    libs.remove(name);
     // Reload the configuration
     let cfg = match config::load_config_for_plugin(name) {
         Ok(config) => config,
@@ -81,48 +25,39 @@ fn reload_plugin(name: &str,
             }
         }
     };
-    drop(cont.respond_to_command.take());
-    drop(cont.dylib.take());
-    *cont = try!(load_dl_init(&cfg));
+    let lib = load_dl_init(&cfg)?;
+    libs.insert(name.into(), lib);
     Ok(())
 }
 
-fn load_dl_init(plugin: &config::Plugin) -> Result<PluginContainer, Box<Error>> {
+fn load_dl_init(plugin: &config::Plugin) -> Result<Library, Box<Error>> {
     #[cfg(debug_assertions)]
     let root = "target/debug";
     #[cfg(not(debug_assertions))]
     let root = "target/release";
     let path = format!("{}/lib{}.so", root, plugin.name);
-    let dl = try!(DynamicLibrary::open(Some(&Path::new(&path))).map_err(|e| DylibError { err: e }));
-    let respond_to_command: RespondToCommand =
-        unsafe {
-            std::mem::transmute(try!(dl.symbol::<()>("respond_to_command")
-                .map_err(|e| DylibError { err: e })))
-        };
-    Ok(PluginContainer {
-        respond_to_command: Some(respond_to_command),
-        dylib: Some(dl),
-    })
+    let lib = Library::new(path)?;
+    Ok(lib)
 }
 
 struct BoncaListener {
     config: config::Config,
-    containers: HashMap<String, PluginContainer>,
+    libs: HashMap<String, Library>,
     irc: Option<Arc<hiirc::Irc>>,
 }
 
 impl BoncaListener {
     pub fn new(config: config::Config) -> Self {
         // Load plugins
-        let mut containers = HashMap::new();
+        let mut libs = HashMap::new();
 
         for plugin in &config.plugins {
-            containers.insert(plugin.name.clone(), load_dl_init(plugin).unwrap());
+            libs.insert(plugin.name.clone(), load_dl_init(plugin).unwrap());
         }
 
         BoncaListener {
             config: config,
-            containers: containers,
+            libs: libs,
             irc: None,
         }
     }
@@ -162,10 +97,12 @@ impl hiirc::Listener for SyncBoncaListener {
             return;
         }
         let cmd = &message[lis.config.cmd_prefix.len()..];
-        for (name, &mut PluginContainer { respond_to_command, .. }) in &mut lis.containers {
+        for (name, lib) in &mut lis.libs {
+            let respond_to_command: Symbol<fn(&str, &str) -> String> =
+                unsafe { lib.get(b"respond_to_command").unwrap() };
             let fresh = cmd.to_owned();
             let nick = sender.nickname().clone();
-            match std::panic::catch_unwind(move || respond_to_command.unwrap()(&fresh, &nick)) {
+            match std::panic::catch_unwind(move || respond_to_command(&fresh, &nick)) {
                 Ok(msg) => {
                     for msg in msg.lines() {
                         if !msg.is_empty() {
@@ -250,7 +187,7 @@ fn main() {
                             match load_dl_init(&plugin) {
                                 Ok(pc) => {
                                     let mut lis = listener.0.lock().unwrap();
-                                    lis.containers.insert(name.to_owned(), pc);
+                                    lis.libs.insert(name.to_owned(), pc);
                                     writeln!(&mut reply, "Loaded \"{}\" plugin.", name).unwrap();
                                 }
                                 Err(e) => {
@@ -266,7 +203,7 @@ fn main() {
                     match words.next() {
                         Some(name) => {
                             let mut lis = listener.0.lock().unwrap();
-                            if lis.containers.remove(name).is_some() {
+                            if lis.libs.remove(name).is_some() {
                                 writeln!(&mut reply, "Removed \"{}\" plugin.", name).unwrap();
                             }
                         }
@@ -277,7 +214,7 @@ fn main() {
                     match words.next() {
                         Some(name) => {
                             let mut lis = listener.0.lock().unwrap();
-                            match reload_plugin(name, &mut lis.containers) {
+                            match reload_plugin(name, &mut lis.libs) {
                                 Ok(()) => writeln!(&mut reply, "Reloaded plugin {}", name).unwrap(),
                                 Err(e) => {
                                     writeln!(&mut reply, "Failed to reload plugin {}: {}", name, e)
