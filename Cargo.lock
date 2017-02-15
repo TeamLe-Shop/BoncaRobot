@@ -1,5 +1,5 @@
 [root]
-name = "shift"
+name = "template"
 version = "0.1.0"
 dependencies = [
  "boncarobot 0.1.0",
@@ -470,6 +470,13 @@ dependencies = [
  "itoa 0.3.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "num-traits 0.1.36 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde 0.9.7 (registry+https://github.com/rust-lang/crates.io-index)",
+]
+
+[[package]]
+name = "shift"
+version = "0.1.0"
+dependencies = [
+ "boncarobot 0.1.0",
 ]
 
 [[package]]

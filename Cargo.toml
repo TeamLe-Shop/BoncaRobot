@@ -11,7 +11,7 @@ zmq = { git = "https://github.com/erickt/rust-zmq.git" }
 rustyline = "1.0.0"
 
 [workspace]
-members = ["plugins/rc", "plugins/search", "plugins/shift"]
+members = ["plugins/rc", "plugins/search", "plugins/shift", "plugins/template"]
 
 [lib]
 name = "plugin_api"
