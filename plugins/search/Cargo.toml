@@ -8,6 +8,9 @@ hyper = "*"
 scraper = "*"
 url = "*"
 
+[dependencies.boncarobot]
+path ="../../"
+
 [lib]
 name = "search"
 crate-type = ["dylib"]

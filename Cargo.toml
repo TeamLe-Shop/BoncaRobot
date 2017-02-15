@@ -12,3 +12,7 @@ rustyline = "1.0.0"
 
 [workspace]
 members = ["plugins/rc", "plugins/search", "plugins/shift"]
+
+[lib]
+name = "plugin_api"
+path = "src/plugin_api.rs"

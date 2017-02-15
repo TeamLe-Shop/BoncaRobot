@@ -1,17 +1,34 @@
-#[no_mangle]
-pub fn respond_to_command(cmd: &str, _sender: &str) -> String {
-    let shl_command = "shl ";
-    let shr_command = "shr ";
-    if cmd.starts_with(shl_command) {
-        let wot = &cmd[shl_command.len()..];
-        shl(wot)
-    } else if cmd.starts_with(shr_command) {
-        let wot = &cmd[shr_command.len()..];
-        shr(wot)
-    } else {
-        String::new()
+#[macro_use]
+extern crate plugin_api;
+
+use plugin_api::prelude::*;
+
+struct ShiftPlugin;
+
+impl Plugin for ShiftPlugin {
+    fn new() -> Self {
+        ShiftPlugin
+    }
+    fn channel_msg(&mut self,
+                   irc: Arc<Irc>,
+                   channel: Arc<Channel>,
+                   sender: Arc<ChannelUser>,
+                   msg: &str) {
+        let shl_command = "shl ";
+        let shr_command = "shr ";
+        if msg.starts_with(shl_command) {
+            let wot = &msg[shl_command.len()..];
+            let _ = irc.privmsg(channel.name(),
+                                &format!("{}: {}", sender.nickname(), &shl(wot)));
+        } else if msg.starts_with(shr_command) {
+            let wot = &msg[shr_command.len()..];
+            let _ = irc.privmsg(channel.name(),
+                                &format!("{}: {}", sender.nickname(), &shr(wot)));
+        }
     }
 }
+
+plugin_export!(ShiftPlugin);
 
 fn find_shl(seq: &[u8], c: char) -> Option<char> {
     if let Some(pos) = seq.iter().position(|b| *b == c as u8) {
@@ -39,17 +56,17 @@ fn find_shr(seq: &[u8], c: char) -> Option<char> {
 
 fn driver<T: Fn(&[u8], char) -> Option<char>>(txt: &str, f: T) -> String {
     txt.chars()
-       .map(|c| {
-           f(b"qwertyuiop", c)
-               .or_else(|| f(b"QWERTYUIOP", c))
-               .or_else(|| f(b"asdfghjkl", c))
-               .or_else(|| f(b"ASDFGHJKL", c))
-               .or_else(|| f(b"zxcvbnm", c))
-               .or_else(|| f(b"ZXCVBNM", c))
-               .or_else(|| f(b"1234567890", c))
-               .unwrap_or(c)
-       })
-       .collect()
+        .map(|c| {
+            f(b"qwertyuiop", c)
+                .or_else(|| f(b"QWERTYUIOP", c))
+                .or_else(|| f(b"asdfghjkl", c))
+                .or_else(|| f(b"ASDFGHJKL", c))
+                .or_else(|| f(b"zxcvbnm", c))
+                .or_else(|| f(b"ZXCVBNM", c))
+                .or_else(|| f(b"1234567890", c))
+                .unwrap_or(c)
+        })
+        .collect()
 }
 
 fn shl(txt: &str) -> String {

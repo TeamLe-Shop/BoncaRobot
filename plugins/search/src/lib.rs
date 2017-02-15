@@ -1,7 +1,10 @@
 extern crate hyper;
 extern crate scraper;
 extern crate url;
+#[macro_use]
+extern crate plugin_api;
 
+use plugin_api::prelude::*;
 use std::error::Error;
 use std::io::prelude::*;
 
@@ -64,32 +67,48 @@ fn test_parse_first_result_on_dump() {
     println!("{:?}", parse_first_result(&body));
 }
 
-#[no_mangle]
-pub fn respond_to_command(cmd: &str, _sender: &str) -> String {
-    if cmd == "search" {
-        return "You need to search for something, retard.".into();
+struct SearchPlugin;
+
+impl Plugin for SearchPlugin {
+    fn new() -> Self {
+        SearchPlugin
     }
-    if cmd.starts_with("search ") {
-        let wot = cmd[7..].trim();
-        if wot.is_empty() {
-            return "Empty search? Impossible!".into();
+    fn channel_msg(&mut self,
+                   irc: Arc<Irc>,
+                   channel: Arc<Channel>,
+                   _sender: Arc<ChannelUser>,
+                   message: &str) {
+        if message == "search" {
+            let _ = irc.privmsg(channel.name(), "You need to search for something, retard.");
         }
-        match query_google(wot) {
-            Ok(body) => {
-                use std::fs::File;
+        if message.starts_with("search ") {
+            let wot = message[7..].trim();
+            if wot.is_empty() {
+                let _ = irc.privmsg(channel.name(), "Empty search? Impossible!");
+            }
+            match query_google(wot) {
+                Ok(body) => {
+                    use std::fs::File;
 
-                let path = "dump.txt";
-                let mut file = File::create(path).unwrap();
-                file.write_all(body.as_bytes()).unwrap();
+                    let path = "dump.txt";
+                    let mut file = File::create(path).unwrap();
+                    file.write_all(body.as_bytes()).unwrap();
 
-                match parse_first_result(&body) {
-                    Ok(result) => result,
-                    Err(e) => format!("Error: {}", e),
+                    match parse_first_result(&body) {
+                        Ok(result) => {
+                            let _ = irc.privmsg(channel.name(), &result);
+                        }
+                        Err(e) => {
+                            let _ = irc.privmsg(channel.name(), &format!("Error: {}", e));
+                        }
+                    }
+                }
+                Err(e) => {
+                    let _ = irc.privmsg(channel.name(), &format!("Error when googuring: {}", e));
                 }
             }
-            Err(e) => format!("Error when googuring: {}", e),
         }
-    } else {
-        "".into()
     }
 }
+
+plugin_export!(SearchPlugin);

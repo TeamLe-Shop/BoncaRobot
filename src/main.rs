@@ -2,18 +2,33 @@ extern crate hiirc;
 extern crate toml;
 extern crate libloading;
 extern crate zmq;
+extern crate plugin_api;
 
 use hiirc::IrcWrite;
 use libloading::{Library, Symbol};
+use plugin_api::Plugin;
 use std::collections::HashMap;
 use std::error::Error;
 use std::sync::{Arc, Mutex};
 use std::thread;
 
+struct PluginContainer {
+    plugin: Box<plugin_api::Plugin>,
+    /// The `Library` must kept alive as long as code from the plugin can run.
+    ///
+    /// WARNING: We are relying here on the current unspecified FIFO drop order of Rust.
+    ///
+    /// `_lib` must be dropped last, because the plugin can run drop code that would be
+    /// destroyed if the library was destroyed first.
+    _lib: Library,
+}
+
 mod config;
 
-fn reload_plugin(name: &str, libs: &mut HashMap<String, Library>) -> Result<(), Box<Error>> {
-    libs.remove(name);
+fn reload_plugin(name: &str,
+                 plugins: &mut HashMap<String, PluginContainer>)
+                 -> Result<(), Box<Error>> {
+    plugins.remove(name);
     // Reload the configuration
     let cfg = match config::load_config_for_plugin(name) {
         Ok(config) => config,
@@ -25,39 +40,46 @@ fn reload_plugin(name: &str, libs: &mut HashMap<String, Library>) -> Result<(), 
             }
         }
     };
-    let lib = load_dl_init(&cfg)?;
-    libs.insert(name.into(), lib);
+    let plugin = load_plugin(&cfg)?;
+    plugins.insert(name.into(), plugin);
     Ok(())
 }
 
-fn load_dl_init(plugin: &config::Plugin) -> Result<Library, Box<Error>> {
+fn load_plugin(plugin: &config::Plugin) -> Result<PluginContainer, Box<Error>> {
     #[cfg(debug_assertions)]
     let root = "target/debug";
     #[cfg(not(debug_assertions))]
     let root = "target/release";
     let path = format!("{}/lib{}.so", root, plugin.name);
     let lib = Library::new(path)?;
-    Ok(lib)
+    let plugin = {
+        let init: Symbol<fn() -> Box<Plugin>> = unsafe { lib.get(b"init")? };
+        init()
+    };
+    Ok(PluginContainer {
+        plugin: plugin,
+        _lib: lib,
+    })
 }
 
 struct BoncaListener {
     config: config::Config,
-    libs: HashMap<String, Library>,
+    plugins: HashMap<String, PluginContainer>,
     irc: Option<Arc<hiirc::Irc>>,
 }
 
 impl BoncaListener {
     pub fn new(config: config::Config) -> Self {
         // Load plugins
-        let mut libs = HashMap::new();
+        let mut plugins = HashMap::new();
 
         for plugin in &config.plugins {
-            libs.insert(plugin.name.clone(), load_dl_init(plugin).unwrap());
+            plugins.insert(plugin.name.clone(), load_plugin(plugin).unwrap());
         }
 
         BoncaListener {
             config: config,
-            libs: libs,
+            plugins: plugins,
             irc: None,
         }
     }
@@ -92,36 +114,14 @@ impl hiirc::Listener for SyncBoncaListener {
                    sender: Arc<hiirc::ChannelUser>,
                    message: &str) {
         let mut lis = self.0.lock().unwrap();
-        let recipient = channel.name();
         if !message.starts_with(&lis.config.cmd_prefix) {
             return;
         }
-        let cmd = &message[lis.config.cmd_prefix.len()..];
-        for (name, lib) in &mut lis.libs {
-            let respond_to_command: Symbol<fn(&str, &str) -> String> =
-                unsafe { lib.get(b"respond_to_command").unwrap() };
-            let fresh = cmd.to_owned();
-            let nick = sender.nickname().clone();
-            match std::panic::catch_unwind(move || respond_to_command(&fresh, &nick)) {
-                Ok(msg) => {
-                    for msg in msg.lines() {
-                        if !msg.is_empty() {
-                            println!("!!! Sending {:?} !!!", msg);
-                            if let Err(e) = irc.privmsg(recipient, msg) {
-                                println!("Error sending: {:?}", e);
-                                let msg = format!("[something went wrong when trying to send \
-                                                   message: {:?}]",
-                                                  e);
-                                let _ = irc.privmsg(recipient, &msg);
-                            }
-                        }
-                    }
-                }
-                Err(_) => {
-                    let errmsg = format!("Plugin \"{}\" panicked.", name);
-                    let _ = irc.privmsg(recipient, &errmsg);
-                }
-            }
+        for plugin in lis.plugins.values_mut() {
+            let irc = irc.clone();
+            let channel = channel.clone();
+            let sender = sender.clone();
+            plugin.plugin.channel_msg(irc, channel, sender, message)
         }
     }
 }
@@ -184,10 +184,10 @@ fn main() {
                                 name: name.to_owned(),
                                 options: HashMap::new(),
                             };
-                            match load_dl_init(&plugin) {
+                            match load_plugin(&plugin) {
                                 Ok(pc) => {
                                     let mut lis = listener.0.lock().unwrap();
-                                    lis.libs.insert(name.to_owned(), pc);
+                                    lis.plugins.insert(name.to_owned(), pc);
                                     writeln!(&mut reply, "Loaded \"{}\" plugin.", name).unwrap();
                                 }
                                 Err(e) => {
@@ -203,7 +203,7 @@ fn main() {
                     match words.next() {
                         Some(name) => {
                             let mut lis = listener.0.lock().unwrap();
-                            if lis.libs.remove(name).is_some() {
+                            if lis.plugins.remove(name).is_some() {
                                 writeln!(&mut reply, "Removed \"{}\" plugin.", name).unwrap();
                             }
                         }
@@ -214,7 +214,7 @@ fn main() {
                     match words.next() {
                         Some(name) => {
                             let mut lis = listener.0.lock().unwrap();
-                            match reload_plugin(name, &mut lis.libs) {
+                            match reload_plugin(name, &mut lis.plugins) {
                                 Ok(()) => writeln!(&mut reply, "Reloaded plugin {}", name).unwrap(),
                                 Err(e) => {
                                     writeln!(&mut reply, "Failed to reload plugin {}: {}", name, e)

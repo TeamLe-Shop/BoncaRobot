@@ -11,3 +11,6 @@ crate-type = ["dylib"]
 # things like freeing something in the host that was allocated
 # in the plugin
 plugin = true
+
+[dependencies.boncarobot]
+path = "../.."
