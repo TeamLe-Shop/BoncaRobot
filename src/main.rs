@@ -195,6 +195,10 @@ fn main() {
                                 Ok(pc) => {
                                     lis.plugins.insert(name.to_owned(), pc);
                                     writeln!(&mut reply, "Loaded \"{}\" plugin.", name).unwrap();
+                                    for channel in lis.irc.as_ref().unwrap().channels() {
+                                        lis.msg(channel.name(),
+                                                &format!("[Plugin '{}' was loaded]", name));
+                                    }
                                 }
                                 Err(e) => {
                                     writeln!(&mut reply, "Failed to load \"{}\": {}", name, e)
@@ -210,6 +214,10 @@ fn main() {
                         Some(name) => {
                             if lis.plugins.remove(name).is_some() {
                                 writeln!(&mut reply, "Removed \"{}\" plugin.", name).unwrap();
+                                for channel in lis.irc.as_ref().unwrap().channels() {
+                                    lis.msg(channel.name(),
+                                            &format!("[Plugin '{}' was unloaded]", name));
+                                }
                             }
                         }
                         None => writeln!(&mut reply, "Don't forget the name!").unwrap(),
@@ -219,7 +227,13 @@ fn main() {
                     match words.next() {
                         Some(name) => {
                             match reload_plugin(name, &mut lis.plugins) {
-                                Ok(()) => writeln!(&mut reply, "Reloaded plugin {}", name).unwrap(),
+                                Ok(()) => {
+                                    writeln!(&mut reply, "Reloaded plugin {}", name).unwrap();
+                                    for channel in lis.irc.as_ref().unwrap().channels() {
+                                    lis.msg(channel.name(),
+                                            &format!("[Plugin '{}' was reloaded]", name));
+                                    }
+                                }
                                 Err(e) => {
                                     writeln!(&mut reply, "Failed to reload plugin {}: {}", name, e)
                                         .unwrap()
