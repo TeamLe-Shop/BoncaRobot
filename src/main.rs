@@ -89,6 +89,12 @@ impl BoncaListener {
     pub fn msg(&self, target: &str, text: &str) {
         self.irc.as_ref().unwrap().privmsg(target, text).unwrap();
     }
+    pub fn join(&self, channel: &str) {
+        self.irc.as_ref().unwrap().join(channel, None).unwrap();
+    }
+    pub fn leave(&self, channel: &str) {
+        self.irc.as_ref().unwrap().part(channel, None).unwrap();
+    }
 }
 
 #[derive(Clone)]
@@ -165,13 +171,14 @@ fn main() {
 
             let mut words = command_str.split(' ');
             let mut reply = String::new();
+            let mut lis = listener.0.lock().unwrap();
             match words.next().unwrap() {
-                "quit" => listener.0.lock().unwrap().request_quit(),
+                "quit" => lis.request_quit(),
                 "say" => {
                     match words.next() {
                         Some(channel) => {
                             let msg = words.collect::<Vec<_>>().join(" ");
-                            listener.0.lock().unwrap().msg(channel, &msg);
+                            lis.msg(channel, &msg);
                         }
                         None => writeln!(&mut reply, "Need channel, buddy.").unwrap(),
                     }
@@ -186,7 +193,6 @@ fn main() {
                             };
                             match load_plugin(&plugin) {
                                 Ok(pc) => {
-                                    let mut lis = listener.0.lock().unwrap();
                                     lis.plugins.insert(name.to_owned(), pc);
                                     writeln!(&mut reply, "Loaded \"{}\" plugin.", name).unwrap();
                                 }
@@ -202,7 +208,6 @@ fn main() {
                 "unload" => {
                     match words.next() {
                         Some(name) => {
-                            let mut lis = listener.0.lock().unwrap();
                             if lis.plugins.remove(name).is_some() {
                                 writeln!(&mut reply, "Removed \"{}\" plugin.", name).unwrap();
                             }
@@ -213,7 +218,6 @@ fn main() {
                 "reload" => {
                     match words.next() {
                         Some(name) => {
-                            let mut lis = listener.0.lock().unwrap();
                             match reload_plugin(name, &mut lis.plugins) {
                                 Ok(()) => writeln!(&mut reply, "Reloaded plugin {}", name).unwrap(),
                                 Err(e) => {
@@ -223,6 +227,22 @@ fn main() {
                             }
                         }
                         None => writeln!(&mut reply, "Need a name, faggot").unwrap(),
+                    }
+                }
+                "join" => {
+                    match words.next() {
+                        Some(name) => {
+                            lis.join(name);
+                        }
+                        None => writeln!(&mut reply, "Need a channel name to join").unwrap(),
+                    }
+                }
+                "leave" => {
+                    match words.next() {
+                        Some(name) => {
+                            lis.leave(name);
+                        }
+                        None => writeln!(&mut reply, "Need a channel name to leave").unwrap(),
                     }
                 }
                 _ => writeln!(&mut reply, "Unknown command, bro.").unwrap(),
