@@ -83,8 +83,8 @@ impl BoncaListener {
             irc: None,
         }
     }
-    pub fn request_quit(&self) {
-        self.irc.as_ref().unwrap().quit(None).unwrap();
+    pub fn request_quit(&self, msg: Option<&str>) {
+        self.irc.as_ref().unwrap().quit(msg).unwrap();
     }
     pub fn msg(&self, target: &str, text: &str) {
         self.irc.as_ref().unwrap().privmsg(target, text).unwrap();
@@ -164,8 +164,9 @@ fn main() {
     let zmq_ctx = zmq::Context::new();
     let sock = zmq_ctx.socket(zmq::SocketType::REP).unwrap();
     sock.bind("ipc:///tmp/boncarobot.sock").unwrap();
+    let mut quit_requested = false;
 
-    loop {
+    while !quit_requested {
         if let Ok(Ok(command_str)) = sock.recv_string(zmq::DONTWAIT) {
             use std::fmt::Write;
 
@@ -173,7 +174,10 @@ fn main() {
             let mut reply = String::new();
             let mut lis = listener.0.lock().unwrap();
             match words.next().unwrap() {
-                "quit" => lis.request_quit(),
+                "quit" => {
+                    lis.request_quit(words.next());
+                    quit_requested = true;
+                }
                 "say" => {
                     match words.next() {
                         Some(channel) => {
