@@ -15,9 +15,9 @@ impl Plugin for SearchFixPlugin {
                    channel: Arc<Channel>,
                    _sender: Arc<ChannelUser>,
                    message: &str) {
-        let uddg = "uddg=";
-        if let Some(idx) = message.find(uddg) {
-            let url = &message[idx + uddg.len()..];
+        let beginning = "/l/?kh=-1&uddg=";
+        if let Some(idx) = message.find(beginning) {
+            let url = &message[idx + beginning.len()..];
             let decoded = url::percent_encoding::percent_decode(url.as_bytes())
                 .decode_utf8()
                 .unwrap_or_else(|_| "invalid url".into());
