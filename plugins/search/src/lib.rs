@@ -73,18 +73,15 @@ impl Plugin for SearchPlugin {
     fn new() -> Self {
         SearchPlugin
     }
-    fn channel_msg(&mut self,
-                   irc: Arc<Irc>,
-                   channel: Arc<Channel>,
-                   _sender: Arc<ChannelUser>,
-                   message: &str) {
-        if message == "search" {
-            let _ = irc.privmsg(channel.name(), "You need to search for something, retard.");
+    fn channel_msg(&mut self, msg: &str, ctx: Context) {
+        if msg == "search" {
+            let _ = ctx.irc.privmsg(ctx.channel.name(),
+                                    "You need to search for something, retard.");
         }
-        if message.starts_with("search ") {
-            let wot = message[7..].trim();
+        if msg.starts_with("search ") {
+            let wot = msg[7..].trim();
             if wot.is_empty() {
-                let _ = irc.privmsg(channel.name(), "Empty search? Impossible!");
+                let _ = ctx.irc.privmsg(ctx.channel.name(), "Empty search? Impossible!");
             }
             match query_google(wot) {
                 Ok(body) => {
@@ -96,15 +93,16 @@ impl Plugin for SearchPlugin {
 
                     match parse_first_result(&body) {
                         Ok(result) => {
-                            let _ = irc.privmsg(channel.name(), &result);
+                            let _ = ctx.irc.privmsg(ctx.channel.name(), &result);
                         }
                         Err(e) => {
-                            let _ = irc.privmsg(channel.name(), &format!("Error: {}", e));
+                            let _ = ctx.irc.privmsg(ctx.channel.name(), &format!("Error: {}", e));
                         }
                     }
                 }
                 Err(e) => {
-                    let _ = irc.privmsg(channel.name(), &format!("Error when googuring: {}", e));
+                    let _ = ctx.irc
+                        .privmsg(ctx.channel.name(), &format!("Error when googuring: {}", e));
                 }
             }
         }

@@ -124,10 +124,12 @@ impl hiirc::Listener for SyncBoncaListener {
             return;
         }
         for plugin in lis.plugins.values_mut() {
-            let irc = irc.clone();
-            let channel = channel.clone();
-            let sender = sender.clone();
-            plugin.plugin.channel_msg(irc, channel, sender, message)
+            plugin.plugin.channel_msg(message,
+                                      plugin_api::Context {
+                                          irc: &irc,
+                                          channel: &channel,
+                                          sender: &sender,
+                                      })
         }
     }
 }

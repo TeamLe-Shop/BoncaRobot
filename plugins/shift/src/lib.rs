@@ -9,21 +9,17 @@ impl Plugin for ShiftPlugin {
     fn new() -> Self {
         ShiftPlugin
     }
-    fn channel_msg(&mut self,
-                   irc: Arc<Irc>,
-                   channel: Arc<Channel>,
-                   sender: Arc<ChannelUser>,
-                   msg: &str) {
+    fn channel_msg(&mut self, msg: &str, ctx: Context) {
         let shl_command = "shl ";
         let shr_command = "shr ";
         if msg.starts_with(shl_command) {
             let wot = &msg[shl_command.len()..];
-            let _ = irc.privmsg(channel.name(),
-                                &format!("{}: {}", sender.nickname(), &shl(wot)));
+            let _ = ctx.irc.privmsg(ctx.channel.name(),
+                                    &format!("{}: {}", ctx.sender.nickname(), &shl(wot)));
         } else if msg.starts_with(shr_command) {
             let wot = &msg[shr_command.len()..];
-            let _ = irc.privmsg(channel.name(),
-                                &format!("{}: {}", sender.nickname(), &shr(wot)));
+            let _ = ctx.irc.privmsg(ctx.channel.name(),
+                                    &format!("{}: {}", ctx.sender.nickname(), &shr(wot)));
         }
     }
 }
