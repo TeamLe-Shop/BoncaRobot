@@ -69,43 +69,43 @@ fn test_parse_first_result_on_dump() {
 
 struct SearchPlugin;
 
+impl SearchPlugin {
+    fn search(_this: &mut Plugin, arg: &str, ctx: Context) {
+        if arg.is_empty() {
+            let _ = ctx.irc.privmsg(ctx.channel.name(), "You need to search for something bro.");
+            return;
+        }
+        match query_google(arg) {
+            Ok(body) => {
+                use std::fs::File;
+
+                let path = "dump.txt";
+                let mut file = File::create(path).unwrap();
+                file.write_all(body.as_bytes()).unwrap();
+
+                match parse_first_result(&body) {
+                    Ok(result) => {
+                        let _ = ctx.irc.privmsg(ctx.channel.name(), &result);
+                    }
+                    Err(e) => {
+                        let _ = ctx.irc.privmsg(ctx.channel.name(), &format!("Error: {}", e));
+                    }
+                }
+            }
+            Err(e) => {
+                let _ = ctx.irc
+                    .privmsg(ctx.channel.name(), &format!("Error when googuring: {}", e));
+            }
+        }
+    }
+}
+
 impl Plugin for SearchPlugin {
     fn new() -> Self {
         SearchPlugin
     }
-    fn channel_msg(&mut self, msg: &str, ctx: Context) {
-        if msg == "search" {
-            let _ = ctx.irc.privmsg(ctx.channel.name(),
-                                    "You need to search for something, retard.");
-        }
-        if msg.starts_with("search ") {
-            let wot = msg[7..].trim();
-            if wot.is_empty() {
-                let _ = ctx.irc.privmsg(ctx.channel.name(), "Empty search? Impossible!");
-            }
-            match query_google(wot) {
-                Ok(body) => {
-                    use std::fs::File;
-
-                    let path = "dump.txt";
-                    let mut file = File::create(path).unwrap();
-                    file.write_all(body.as_bytes()).unwrap();
-
-                    match parse_first_result(&body) {
-                        Ok(result) => {
-                            let _ = ctx.irc.privmsg(ctx.channel.name(), &result);
-                        }
-                        Err(e) => {
-                            let _ = ctx.irc.privmsg(ctx.channel.name(), &format!("Error: {}", e));
-                        }
-                    }
-                }
-                Err(e) => {
-                    let _ = ctx.irc
-                        .privmsg(ctx.channel.name(), &format!("Error when googuring: {}", e));
-                }
-            }
-        }
+    fn register(&self, meta: &mut PluginMeta) {
+        meta.command("search", "Googuru search", Self::search);
     }
 }
 

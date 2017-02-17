@@ -9,6 +9,7 @@ toml = "0.2"
 libloading = "0.3.2"
 zmq = { git = "https://github.com/erickt/rust-zmq.git" }
 rustyline = "1.0.0"
+downcast-rs = "1.0.0"
 
 [workspace]
 members = ["plugins/rc", "plugins/search", "plugins/shift", "plugins/template",

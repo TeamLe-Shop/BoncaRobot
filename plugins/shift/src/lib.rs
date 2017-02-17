@@ -5,22 +5,26 @@ use plugin_api::prelude::*;
 
 struct ShiftPlugin;
 
+impl ShiftPlugin {
+    fn shl(_this: &mut Plugin, arg: &str, ctx: Context) {
+        let _ = ctx.irc.privmsg(ctx.channel.name(),
+                                &format!("{}: {}", ctx.sender.nickname(), &shl(arg)));
+    }
+    fn shr(_this: &mut Plugin, arg: &str, ctx: Context) {
+        let _ = ctx.irc.privmsg(ctx.channel.name(),
+                                &format!("{}: {}", ctx.sender.nickname(), &shr(arg)));
+    }
+}
+
 impl Plugin for ShiftPlugin {
     fn new() -> Self {
         ShiftPlugin
     }
-    fn channel_msg(&mut self, msg: &str, ctx: Context) {
-        let shl_command = "shl ";
-        let shr_command = "shr ";
-        if msg.starts_with(shl_command) {
-            let wot = &msg[shl_command.len()..];
-            let _ = ctx.irc.privmsg(ctx.channel.name(),
-                                    &format!("{}: {}", ctx.sender.nickname(), &shl(wot)));
-        } else if msg.starts_with(shr_command) {
-            let wot = &msg[shr_command.len()..];
-            let _ = ctx.irc.privmsg(ctx.channel.name(),
-                                    &format!("{}: {}", ctx.sender.nickname(), &shr(wot)));
-        }
+    fn register(&self, meta: &mut PluginMeta) {
+        meta.command("shl", "Shifts shit left. e.g. 'kok' -> 'jij'", Self::shl);
+        meta.command("shr",
+                     "Shifts shit right. e.g. 'fuck you' -> 'givl upi",
+                     Self::shr);
     }
 }
 

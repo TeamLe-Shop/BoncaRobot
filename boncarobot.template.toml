@@ -20,3 +20,7 @@ shl-command = "shl"
 shr-command = "shr"
 # Rusty calculator
 [plugins.rc]
+# GOOGURU
+[plugins.search]
+# Feex eet, white male.
+[plugins.searchfix]

@@ -6,20 +6,21 @@ extern crate plugin_api;
 
 use hiirc::IrcWrite;
 use libloading::{Library, Symbol};
-use plugin_api::Plugin;
+use plugin_api::{Plugin, PluginMeta};
 use std::collections::HashMap;
 use std::error::Error;
 use std::sync::{Arc, Mutex};
 use std::thread;
 
 struct PluginContainer {
-    plugin: Box<plugin_api::Plugin>,
+    plugin: Box<Plugin>,
     /// The `Library` must kept alive as long as code from the plugin can run.
     ///
     /// WARNING: We are relying here on the current unspecified FIFO drop order of Rust.
     ///
     /// `_lib` must be dropped last, because the plugin can run drop code that would be
     /// destroyed if the library was destroyed first.
+    meta: PluginMeta,
     _lib: Library,
 }
 
@@ -56,8 +57,11 @@ fn load_plugin(plugin: &config::Plugin) -> Result<PluginContainer, Box<Error>> {
         let init: Symbol<fn() -> Box<Plugin>> = unsafe { lib.get(b"init")? };
         init()
     };
+    let mut meta = PluginMeta::default();
+    plugin.register(&mut meta);
     Ok(PluginContainer {
         plugin: plugin,
+        meta: meta,
         _lib: lib,
     })
 }
@@ -119,17 +123,50 @@ impl hiirc::Listener for SyncBoncaListener {
                    channel: Arc<hiirc::Channel>,
                    sender: Arc<hiirc::ChannelUser>,
                    message: &str) {
+        use std::fmt::Write;
         let mut lis = self.0.lock().unwrap();
-        if !message.starts_with(&lis.config.cmd_prefix) {
+        let prefix = lis.config.cmd_prefix.clone();
+        let help_string = format!("{}help", prefix.clone());
+
+        if message.starts_with(&help_string) {
+            if let Some(arg) = message[help_string.len()..].split_whitespace().next() {
+                for plugin in lis.plugins.values() {
+                    for cmd in &plugin.meta.commands {
+                        if cmd.name == arg {
+                            let _ = irc.privmsg(channel.name(),
+                                                &format!("{}: {}", sender.nickname(), cmd.help));
+                            return;
+                        }
+                    }
+                }
+            }
+            let mut msg = String::new();
+            let _ = write!(&mut msg,
+                           "The following commands are available ({} <command>): ",
+                           &help_string);
+            for plugin in lis.plugins.values() {
+                for cmd in &plugin.meta.commands {
+                    let _ = write!(&mut msg, "{}, ", cmd.name);
+                }
+            }
+            let _ = irc.privmsg(channel.name(), &format!("{}: {}", sender.nickname(), msg));
             return;
         }
+
         for plugin in lis.plugins.values_mut() {
-            plugin.plugin.channel_msg(message,
-                                      plugin_api::Context {
-                                          irc: &irc,
-                                          channel: &channel,
-                                          sender: &sender,
-                                      })
+            let ctx = plugin_api::Context {
+                irc: &irc,
+                channel: &channel,
+                sender: &sender,
+            };
+            plugin.plugin.channel_msg(message, ctx);
+            for cmd in &plugin.meta.commands {
+                let cmd_string = format!("{}{} ", prefix, cmd.name);
+                if message.starts_with(&cmd_string) {
+                    let arg = &message[cmd_string.len()..];
+                    (cmd.fun)(&mut *plugin.plugin, arg, ctx);
+                }
+            }
         }
     }
 }

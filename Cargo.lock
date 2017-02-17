@@ -19,6 +19,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 name = "boncarobot"
 version = "0.1.0"
 dependencies = [
+ "downcast-rs 1.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "hiirc 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "libloading 0.3.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "rustyline 1.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -42,6 +43,11 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "unreachable 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
+
+[[package]]
+name = "downcast-rs"
+version = "1.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
 name = "dtoa"
@@ -650,6 +656,7 @@ dependencies = [
 "checksum bitflags 0.7.0 (registry+https://github.com/rust-lang/crates.io-index)" = "aad18937a628ec6abcd26d1489012cc0e18c21798210f491af69ded9b881106d"
 "checksum cssparser 0.5.8 (registry+https://github.com/rust-lang/crates.io-index)" = "9447212c775f9e07f598fc5263fac48c7cea7a1c236646e4c9eb6070f13a85fd"
 "checksum debug_unreachable 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)" = "9a032eac705ca39214d169f83e3d3da290af06d8d1d344d1baad2fd002dca4b3"
+"checksum downcast-rs 1.0.0 (registry+https://github.com/rust-lang/crates.io-index)" = "917042ca6e6c9fe735a63cd4d5d4c43c64ea8deb456fc5465d3f78df24e68d86"
 "checksum dtoa 0.4.1 (registry+https://github.com/rust-lang/crates.io-index)" = "80c8b71fd71146990a9742fc06dcbbde19161a267e0ad4e572c35162f4578c90"
 "checksum ego-tree 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)" = "40dab84b1ccdb937baa448b8a154abc691f72887de0f0abc5f4d7a2158b7978d"
 "checksum encode_unicode 0.1.3 (registry+https://github.com/rust-lang/crates.io-index)" = "28d65f1f5841ef7c6792861294b72beda34c664deb8be27970f36c306b7da1ce"
