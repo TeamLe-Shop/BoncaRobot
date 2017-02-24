@@ -13,7 +13,7 @@ downcast-rs = "1.0.0"
 
 [workspace]
 members = ["plugins/rc", "plugins/search", "plugins/shift", "plugins/template",
-           "plugins/searchfix"]
+           "plugins/searchfix", "plugins/isolang"]
 
 [lib]
 name = "plugin_api"

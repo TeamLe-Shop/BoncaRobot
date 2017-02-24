@@ -1,0 +1,19 @@
+[package]
+name = "isolang"
+version = "0.1.0"
+authors = ["Mika Attila <radiantstatue@gmail.com>"]
+
+[dependencies.boncarobot]
+path = "../.."
+
+[dependencies]
+csv = "0.15"
+
+[lib]
+name = "isolang"
+crate-type = ["dylib"]
+# This is important, makes it so that the lib is compiled with
+# rustc -C prefer-dynamic, which is required for
+# things like freeing something in the host that was allocated
+# in the plugin
+plugin = true
