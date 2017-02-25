@@ -161,9 +161,9 @@ impl hiirc::Listener for SyncBoncaListener {
             };
             plugin.plugin.channel_msg(message, ctx);
             for cmd in &plugin.meta.commands {
-                let cmd_string = format!("{}{} ", prefix, cmd.name);
+                let cmd_string = format!("{}{}", prefix, cmd.name);
                 if message.starts_with(&cmd_string) {
-                    let arg = &message[cmd_string.len()..];
+                    let arg = message[cmd_string.len()..].trim_left();
                     (cmd.fun)(&mut *plugin.plugin, arg, ctx);
                 }
             }
