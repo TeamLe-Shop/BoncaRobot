@@ -6,14 +6,14 @@ extern crate plugin_api;
 
 use hiirc::IrcWrite;
 use libloading::{Library, Symbol};
-use plugin_api::{Plugin, PluginMeta};
+use plugin_api::{Plugin, PluginMeta, Context};
 use std::collections::HashMap;
 use std::error::Error;
 use std::sync::{Arc, Mutex};
 use std::thread;
 
 struct PluginContainer {
-    plugin: Box<Plugin>,
+    plugin: Arc<Mutex<Plugin>>,
     /// The `Library` must kept alive as long as code from the plugin can run.
     ///
     /// WARNING: We are relying here on the current unspecified FIFO drop order of Rust.
@@ -54,11 +54,11 @@ fn load_plugin(plugin: &config::Plugin) -> Result<PluginContainer, Box<Error>> {
     let path = format!("{}/lib{}.so", root, plugin.name);
     let lib = Library::new(path)?;
     let plugin = {
-        let init: Symbol<fn() -> Box<Plugin>> = unsafe { lib.get(b"init")? };
+        let init: Symbol<fn() -> Arc<Mutex<Plugin>>> = unsafe { lib.get(b"init")? };
         init()
     };
     let mut meta = PluginMeta::default();
-    plugin.register(&mut meta);
+    plugin.lock().unwrap().register(&mut meta);
     Ok(PluginContainer {
         plugin: plugin,
         meta: meta,
@@ -154,17 +154,34 @@ impl hiirc::Listener for SyncBoncaListener {
         }
 
         for plugin in lis.plugins.values_mut() {
-            let ctx = plugin_api::Context {
-                irc: &irc,
-                channel: &channel,
-                sender: &sender,
-            };
-            plugin.plugin.channel_msg(message, ctx);
+            std::thread::spawn({
+                let plugin = plugin.plugin.clone();
+                let message = message.to_owned();
+                let irc = irc.clone();
+                let channel = channel.clone();
+                let sender = sender.clone();
+                move || {
+                    plugin.lock()
+                        .unwrap()
+                        .channel_msg(&message, Context::new(&irc, &channel, &sender));
+                }
+            });
             for cmd in &plugin.meta.commands {
                 let cmd_string = format!("{}{}", prefix, cmd.name);
                 if message.starts_with(&cmd_string) {
-                    let arg = message[cmd_string.len()..].trim_left();
-                    (cmd.fun)(&mut *plugin.plugin, arg, ctx);
+                    std::thread::spawn({
+                        let plugin = plugin.plugin.clone();
+                        let irc = irc.clone();
+                        let channel = channel.clone();
+                        let sender = sender.clone();
+                        let arg = message[cmd_string.len()..].trim_left().to_owned();
+                        let fun = cmd.fun;
+                        move || {
+                            fun(&mut *plugin.lock().unwrap(),
+                                &arg,
+                                Context::new(&irc, &channel, &sender));
+                        }
+                    });
                 }
             }
         }

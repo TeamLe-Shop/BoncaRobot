@@ -25,6 +25,20 @@ pub struct Context<'a> {
     pub sender: &'a hiirc::ChannelUser,
 }
 
+impl<'a> Context<'a> {
+    /// JUST DO IT.
+    pub fn new(irc: &'a hiirc::Irc,
+               channel: &'a hiirc::Channel,
+               sender: &'a hiirc::ChannelUser)
+               -> Self {
+        Self {
+            irc: irc,
+            channel: channel,
+            sender: sender,
+        }
+    }
+}
+
 /// Type of the function that gets called when a command is invoked.
 pub type CommandFn = fn(&mut Plugin, &str, Context);
 
@@ -74,9 +88,10 @@ impl_downcast!(Plugin);
 #[macro_export]
 macro_rules! plugin_export {
     ($plugin:tt) => {
+        use std::sync::{Arc, Mutex};
         #[no_mangle]
-        pub fn init() -> Box<Plugin> {
-            Box::new($plugin::new())
+        pub fn init() -> Arc<Mutex<Plugin>> {
+            Arc::new(Mutex::new($plugin::new()))
         }
     }
 }
