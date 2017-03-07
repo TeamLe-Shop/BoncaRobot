@@ -24,3 +24,4 @@ shr-command = "shr"
 [plugins.search]
 # Feex eet, white male.
 [plugins.searchfix]
+[plugins.isolang]
