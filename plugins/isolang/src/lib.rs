@@ -49,7 +49,7 @@ impl Plugin for IsoLangPlugin {
 
 plugin_export!(IsoLangPlugin);
 
-const CSV: &str = r#"
+const CSV: &'static str = r#"
 "alpha2","English"
 "aa","Afar"
 "ab","Abkhazian"
