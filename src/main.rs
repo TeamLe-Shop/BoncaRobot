@@ -47,11 +47,16 @@ fn reload_plugin(name: &str,
 }
 
 fn load_plugin(plugin: &config::Plugin) -> Result<PluginContainer, Box<Error>> {
+    use std::env::consts::{DLL_PREFIX, DLL_SUFFIX};
     #[cfg(debug_assertions)]
     let root = "target/debug";
     #[cfg(not(debug_assertions))]
     let root = "target/release";
-    let path = format!("{}/lib{}.so", root, plugin.name);
+    let path = format!("{dir}/{prefix}{name}{suffix}",
+                       dir = root,
+                       prefix = DLL_PREFIX,
+                       name = plugin.name,
+                       suffix = DLL_SUFFIX);
     let lib = Library::new(path)?;
     let plugin = {
         let init: Symbol<fn() -> Arc<Mutex<Plugin>>> = unsafe { lib.get(b"init")? };
