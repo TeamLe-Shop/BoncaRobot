@@ -72,18 +72,21 @@ fn load_plugin(plugin: &config::Plugin) -> Result<PluginContainer, Box<Error>> {
 }
 
 struct BoncaListener {
-    config: config::Config,
+    config: Arc<Mutex<config::Config>>,
     plugins: HashMap<String, PluginContainer>,
     irc: Option<Arc<hiirc::Irc>>,
 }
 
 impl BoncaListener {
-    pub fn new(config: config::Config) -> Self {
+    pub fn new(config: Arc<Mutex<config::Config>>) -> Self {
         // Load plugins
         let mut plugins = HashMap::new();
+        {
+            let cfg = config.lock().unwrap();
 
-        for plugin in &config.plugins {
-            plugins.insert(plugin.name.clone(), load_plugin(plugin).unwrap());
+            for plugin in &cfg.plugins {
+                plugins.insert(plugin.name.clone(), load_plugin(plugin).unwrap());
+            }
         }
 
         BoncaListener {
@@ -110,7 +113,7 @@ impl BoncaListener {
 struct SyncBoncaListener(Arc<Mutex<BoncaListener>>);
 
 impl SyncBoncaListener {
-    pub fn new(config: config::Config) -> Self {
+    pub fn new(config: Arc<Mutex<config::Config>>) -> Self {
         SyncBoncaListener(Arc::new(Mutex::new(BoncaListener::new(config))))
     }
 }
@@ -119,7 +122,7 @@ impl hiirc::Listener for SyncBoncaListener {
     fn welcome(&mut self, irc: Arc<hiirc::Irc>) {
         let mut lis = self.0.lock().unwrap();
         lis.irc = Some(irc.clone());
-        for c in &lis.config.channels {
+        for c in &lis.config.lock().unwrap().channels {
             irc.join(c, None).unwrap();
         }
     }
@@ -130,7 +133,7 @@ impl hiirc::Listener for SyncBoncaListener {
                    message: &str) {
         use std::fmt::Write;
         let mut lis = self.0.lock().unwrap();
-        let prefix = lis.config.cmd_prefix.clone();
+        let prefix = lis.config.lock().unwrap().cmd_prefix.clone();
         let help_string = format!("{}help", prefix.clone());
 
         if message.starts_with(&help_string) {
@@ -208,13 +211,18 @@ fn main() {
         return;
     }
 
-    let config = config::load().unwrap();
+    let config = Arc::new(Mutex::new(config::load().unwrap()));
 
-    let mut server = config.server.clone();
+    let mut server;
+    let nick;
+    {
+        let cfg = config.lock().unwrap();
+        server = cfg.server.clone();
+        nick = cfg.nick.clone();
+    }
     server.push_str(":6667");
-    let nick = config.nick.clone();
 
-    let listener = SyncBoncaListener::new(config);
+    let listener = SyncBoncaListener::new(config.clone());
     let listener_clone = listener.clone();
     thread::spawn(move || {
         let settings = hiirc::Settings::new(&server, &nick);
@@ -306,6 +314,14 @@ fn main() {
                             }
                         }
                         None => writeln!(&mut reply, "Need a name, faggot").unwrap(),
+                    }
+                }
+                "set-prefix" => {
+                    match words.next() {
+                        Some(value) => {
+                            config.lock().unwrap().cmd_prefix = value.to_owned();
+                        }
+                        None => writeln!(&mut reply, "Need a value, fag.").unwrap(),
                     }
                 }
                 "join" => {
