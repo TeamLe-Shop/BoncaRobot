@@ -65,10 +65,10 @@ fn load_plugin(plugin: &config::Plugin) -> Result<PluginContainer, Box<Error>> {
     let mut meta = PluginMeta::default();
     plugin.lock().unwrap().register(&mut meta);
     Ok(PluginContainer {
-        plugin: plugin,
-        meta: meta,
-        _lib: lib,
-    })
+           plugin: plugin,
+           meta: meta,
+           _lib: lib,
+       })
 }
 
 struct BoncaListener {
@@ -99,13 +99,25 @@ impl BoncaListener {
         self.irc.as_ref().unwrap().quit(msg).unwrap();
     }
     pub fn msg(&self, target: &str, text: &str) {
-        self.irc.as_ref().unwrap().privmsg(target, text).unwrap();
+        self.irc
+            .as_ref()
+            .unwrap()
+            .privmsg(target, text)
+            .unwrap();
     }
     pub fn join(&self, channel: &str) {
-        self.irc.as_ref().unwrap().join(channel, None).unwrap();
+        self.irc
+            .as_ref()
+            .unwrap()
+            .join(channel, None)
+            .unwrap();
     }
     pub fn leave(&self, channel: &str) {
-        self.irc.as_ref().unwrap().part(channel, None).unwrap();
+        self.irc
+            .as_ref()
+            .unwrap()
+            .part(channel, None)
+            .unwrap();
     }
 }
 
@@ -141,8 +153,9 @@ impl hiirc::Listener for SyncBoncaListener {
                 for plugin in lis.plugins.values() {
                     for cmd in &plugin.meta.commands {
                         if cmd.name == arg {
-                            let _ = irc.privmsg(channel.name(),
-                                                &format!("{}: {}", sender.nickname(), cmd.help));
+                            let _ =
+                                irc.privmsg(channel.name(),
+                                            &format!("{}: {}", sender.nickname(), cmd.help));
                             return;
                         }
                     }
@@ -163,33 +176,36 @@ impl hiirc::Listener for SyncBoncaListener {
 
         for plugin in lis.plugins.values_mut() {
             std::thread::spawn({
-                let plugin = plugin.plugin.clone();
-                let message = message.to_owned();
-                let irc = irc.clone();
-                let channel = channel.clone();
-                let sender = sender.clone();
-                move || {
-                    plugin.lock()
-                        .unwrap()
-                        .channel_msg(&message, Context::new(&irc, &channel, &sender));
-                }
-            });
+                                   let plugin = plugin.plugin.clone();
+                                   let message = message.to_owned();
+                                   let irc = irc.clone();
+                                   let channel = channel.clone();
+                                   let sender = sender.clone();
+                                   move || {
+                                       plugin
+                                           .lock()
+                                           .unwrap()
+                                           .channel_msg(&message,
+                                                        Context::new(&irc, &channel, &sender));
+                                   }
+                               });
             for cmd in &plugin.meta.commands {
                 let cmd_string = format!("{}{}", prefix, cmd.name);
                 if message.starts_with(&cmd_string) {
                     std::thread::spawn({
-                        let plugin = plugin.plugin.clone();
-                        let irc = irc.clone();
-                        let channel = channel.clone();
-                        let sender = sender.clone();
-                        let arg = message[cmd_string.len()..].trim_left().to_owned();
-                        let fun = cmd.fun;
-                        move || {
-                            fun(&mut *plugin.lock().unwrap(),
-                                &arg,
-                                Context::new(&irc, &channel, &sender));
-                        }
-                    });
+                                           let plugin = plugin.plugin.clone();
+                                           let irc = irc.clone();
+                                           let channel = channel.clone();
+                                           let sender = sender.clone();
+                                           let arg =
+                                               message[cmd_string.len()..].trim_left().to_owned();
+                                           let fun = cmd.fun;
+                                           move || {
+                                               fun(&mut *plugin.lock().unwrap(),
+                                                   &arg,
+                                                   Context::new(&irc, &channel, &sender));
+                                           }
+                                       });
                 }
             }
         }
@@ -225,10 +241,11 @@ fn main() {
     let listener = SyncBoncaListener::new(config.clone());
     let listener_clone = listener.clone();
     thread::spawn(move || {
-        let settings = hiirc::Settings::new(&server, &nick);
-        settings.dispatch(listener_clone)
-            .unwrap_or_else(|e| panic!("Failed to dispatch: {:?}", e));
-    });
+                      let settings = hiirc::Settings::new(&server, &nick);
+                      settings
+                          .dispatch(listener_clone)
+                          .unwrap_or_else(|e| panic!("Failed to dispatch: {:?}", e));
+                  });
 
     let zmq_ctx = zmq::Context::new();
     let sock = zmq_ctx.socket(zmq::SocketType::REP).unwrap();

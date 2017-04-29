@@ -80,9 +80,9 @@ pub fn load_config_for_plugin(name: &str) -> Result<Plugin, LoadError> {
     let mut plugin: Option<Plugin> = None;
     for_each_plugin(&table, |plugin_name, options| if name == plugin_name {
         plugin = Some(Plugin {
-            name: name.to_owned(),
-            options: get_plugin_opts(options),
-        });
+                          name: name.to_owned(),
+                          options: get_plugin_opts(options),
+                      });
     });
     match plugin {
         Some(plugin) => Ok(plugin),
@@ -168,15 +168,15 @@ pub fn load() -> Result<Config, LoadError> {
     let mut plugins_vec = Vec::new();
     for_each_plugin(&table, |name, options| {
         plugins_vec.push(Plugin {
-            name: name.clone(),
-            options: get_plugin_opts(options),
-        })
+                             name: name.clone(),
+                             options: get_plugin_opts(options),
+                         })
     });
     Ok(Config {
-        cmd_prefix: cmd_prefix,
-        plugins: plugins_vec,
-        channels: channels,
-        nick: nick,
-        server: server,
-    })
+           cmd_prefix: cmd_prefix,
+           plugins: plugins_vec,
+           channels: channels,
+           nick: nick,
+           server: server,
+       })
 }

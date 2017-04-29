@@ -62,11 +62,12 @@ pub struct PluginMeta {
 impl PluginMeta {
     /// Add a command.
     pub fn command(&mut self, name: &'static str, help: &'static str, fun: CommandFn) {
-        self.commands.push(Command {
-            name: name,
-            help: help,
-            fun: fun,
-        })
+        self.commands
+            .push(Command {
+                      name: name,
+                      help: help,
+                      fun: fun,
+                  })
     }
 }
 
