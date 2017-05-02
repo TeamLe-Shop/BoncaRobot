@@ -19,8 +19,11 @@ impl CalcPlugin {
                 Err(e) => response.push_str(&e.to_string()),
             }
             response.push_str(", ");
-            let _ = ctx.irc.privmsg(ctx.channel.name(),
-                                    &format!("{}: {}", ctx.sender.nickname(), response));
+            let _ = ctx.irc
+                .privmsg(
+                    ctx.channel.name(),
+                    &format!("{}: {}", ctx.sender.nickname(), response),
+                );
         }
     }
 }
@@ -30,9 +33,11 @@ impl Plugin for CalcPlugin {
         Self { calc: Calc::new() }
     }
     fn register(&self, meta: &mut PluginMeta) {
-        meta.command("rc",
-                     "Calculates shit with the epic RUSTY-CALCULATOR",
-                     Self::rc);
+        meta.command(
+            "rc",
+            "Calculates shit with the epic RUSTY-CALCULATOR",
+            Self::rc,
+        );
     }
 }
 

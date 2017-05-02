@@ -26,7 +26,10 @@ const URLQ: &'static str = "/url?q=";
 
 fn parse_urlq(urlq: &str) -> Result<&str, Box<Error>> {
     let begin = URLQ.len();
-    let end = begin + urlq[begin..].find("&sa=").ok_or("Expected &sa= shit, but didn't find it.")?;
+    let end = begin +
+              urlq[begin..]
+                  .find("&sa=")
+                  .ok_or("Expected &sa= shit, but didn't find it.")?;
     Ok(&urlq[begin..end])
 }
 
@@ -45,11 +48,17 @@ pub fn parse_first_result(body: &str) -> Result<String, Box<Error>> {
     let sel = Selector::parse("h3.r").unwrap();
     let mut h3s = html.select(&sel);
     loop {
-        let h3 = h3s.next().ok_or("There should be a h3 class=\"r\", but there isn't")?;
+        let h3 = h3s.next()
+            .ok_or("There should be a h3 class=\"r\", but there isn't")?;
         let sel = Selector::parse("a").unwrap();
-        let a = h3.select(&sel).next().ok_or("There should be a <a>, but there isn't")?;
-        let href = a.value().attr("href").ok_or("<a> should have a href, but it doesn't")?;
-        let href = url::percent_encoding::percent_decode(href.as_bytes()).decode_utf8()?;
+        let a = h3.select(&sel)
+            .next()
+            .ok_or("There should be a <a>, but there isn't")?;
+        let href = a.value()
+            .attr("href")
+            .ok_or("<a> should have a href, but it doesn't")?;
+        let href = url::percent_encoding::percent_decode(href.as_bytes())
+            .decode_utf8()?;
         if href.starts_with("/search?q=") {
             continue;
         }
@@ -72,7 +81,8 @@ struct SearchPlugin;
 impl SearchPlugin {
     fn search(_this: &mut Plugin, arg: &str, ctx: Context) {
         if arg.is_empty() {
-            let _ = ctx.irc.privmsg(ctx.channel.name(), "You need to search for something bro.");
+            let _ = ctx.irc
+                .privmsg(ctx.channel.name(), "You need to search for something bro.");
             return;
         }
         match query_google(arg) {
@@ -88,7 +98,8 @@ impl SearchPlugin {
                         let _ = ctx.irc.privmsg(ctx.channel.name(), &result);
                     }
                     Err(e) => {
-                        let _ = ctx.irc.privmsg(ctx.channel.name(), &format!("Error: {}", e));
+                        let _ = ctx.irc
+                            .privmsg(ctx.channel.name(), &format!("Error: {}", e));
                     }
                 }
             }
