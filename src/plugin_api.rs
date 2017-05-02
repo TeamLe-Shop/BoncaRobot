@@ -27,10 +27,11 @@ pub struct Context<'a> {
 
 impl<'a> Context<'a> {
     /// JUST DO IT.
-    pub fn new(irc: &'a hiirc::Irc,
-               channel: &'a hiirc::Channel,
-               sender: &'a hiirc::ChannelUser)
-               -> Self {
+    pub fn new(
+        irc: &'a hiirc::Irc,
+        channel: &'a hiirc::Channel,
+        sender: &'a hiirc::ChannelUser,
+    ) -> Self {
         Self {
             irc: irc,
             channel: channel,
@@ -63,11 +64,13 @@ impl PluginMeta {
     /// Add a command.
     pub fn command(&mut self, name: &'static str, help: &'static str, fun: CommandFn) {
         self.commands
-            .push(Command {
-                      name: name,
-                      help: help,
-                      fun: fun,
-                  })
+            .push(
+                Command {
+                    name: name,
+                    help: help,
+                    fun: fun,
+                },
+            )
     }
 }
 
@@ -76,7 +79,9 @@ pub trait Plugin: Send + Downcast {
     /// Executed when a message is sent to a channel.
     fn channel_msg(&mut self, _msg: &str, _ctx: Context) {}
     /// Every plugin must be constructible without arguments.
-    fn new() -> Self where Self: Sized;
+    fn new() -> Self
+    where
+        Self: Sized;
     /// Register stuff for this plugin. For example, commands.
     fn register(&self, _meta: &mut PluginMeta) {}
 }
