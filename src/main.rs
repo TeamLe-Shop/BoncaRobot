@@ -347,13 +347,8 @@ fn main() {
                         None => writeln!(&mut reply, "Need a name, faggot").unwrap(),
                     }
                 }
-                "set-prefix" => {
-                    match words.next() {
-                        Some(value) => {
-                            config.lock().unwrap().cmd_prefix = value.to_owned();
-                        }
-                        None => writeln!(&mut reply, "Need a value, fag.").unwrap(),
-                    }
+                "reload-cfg" => {
+                    *config.lock().unwrap() = config::load().unwrap();
                 }
                 "join" => {
                     match words.next() {
