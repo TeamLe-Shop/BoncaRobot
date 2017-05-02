@@ -4,6 +4,8 @@ extern crate libloading;
 extern crate zmq;
 extern crate plugin_api;
 
+mod config;
+
 use hiirc::IrcWrite;
 use libloading::{Library, Symbol};
 use plugin_api::{Plugin, PluginMeta, Context};
@@ -23,8 +25,6 @@ struct PluginContainer {
     meta: PluginMeta,
     _lib: Library,
 }
-
-mod config;
 
 fn reload_plugin(
     name: &str,
