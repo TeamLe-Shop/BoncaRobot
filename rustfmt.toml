@@ -1,5 +1,5 @@
-reorder-imports = true
-write-mode = "overwrite"
+reorder_imports = true
+write_mode = "overwrite"
 fn_args_layout = "Block"
 array_layout = "Block"
 where_style = "Rfc"
