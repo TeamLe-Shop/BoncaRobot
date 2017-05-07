@@ -66,16 +66,6 @@ pub fn parse_first_result(body: &str) -> Result<String, Box<Error>> {
     }
 }
 
-#[test]
-#[ignore]
-fn test_parse_first_result_on_dump() {
-    use std::fs::File;
-    let mut f = File::open("../../dump.txt").unwrap();
-    let mut body = String::new();
-    f.read_to_string(&mut body).unwrap();
-    println!("{:?}", parse_first_result(&body));
-}
-
 struct SearchPlugin;
 
 impl SearchPlugin {
@@ -87,11 +77,6 @@ impl SearchPlugin {
         }
         match query_google(arg) {
             Ok(body) => {
-                use std::fs::File;
-
-                let path = "dump.txt";
-                let mut file = File::create(path).unwrap();
-                file.write_all(body.as_bytes()).unwrap();
 
                 match parse_first_result(&body) {
                     Ok(result) => {
