@@ -235,16 +235,11 @@ fn main() {
         return;
     }
 
-    let config = Arc::new(Mutex::new(config::load().unwrap()));
-
-    let mut server;
-    let nick;
-    {
-        let cfg = config.lock().unwrap();
-        server = cfg.server.clone();
-        nick = cfg.nick.clone();
-    }
+    let config = config::load().unwrap();
+    let mut server = config.server.clone();
+    let nick = config.nick.clone();
     server.push_str(":6667");
+    let config = Arc::new(Mutex::new(config));
 
     let listener = SyncBoncaListener::new(config.clone());
     let listener_clone = listener.clone();
