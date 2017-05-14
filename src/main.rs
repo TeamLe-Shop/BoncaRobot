@@ -7,7 +7,7 @@ extern crate plugin_api;
 mod config;
 
 use hiirc::IrcWrite;
-use libloading::{Library, Symbol};
+use libloading::Library;
 use plugin_api::{Plugin, PluginMeta, Context};
 use std::collections::HashMap;
 use std::error::Error;
@@ -62,7 +62,7 @@ fn load_plugin(plugin: &config::Plugin) -> Result<PluginContainer, Box<Error>> {
     );
     let lib = Library::new(path)?;
     let plugin = {
-        let init: Symbol<fn() -> Arc<Mutex<Plugin>>> = unsafe { lib.get(b"init")? };
+        let init = unsafe { lib.get::<fn() -> Arc<Mutex<Plugin>>>(b"init")? };
         init()
     };
     let mut meta = PluginMeta::default();
