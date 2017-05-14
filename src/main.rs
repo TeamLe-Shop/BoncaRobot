@@ -72,7 +72,7 @@ fn load_plugin(plugin: &config::Plugin) -> Result<PluginContainer, Box<Error>> {
             plugin: plugin,
             meta: meta,
             _lib: lib,
-        },
+        }
     )
 }
 
@@ -186,7 +186,7 @@ impl hiirc::Listener for SyncBoncaListener {
                             .unwrap()
                             .channel_msg(&message, Context::new(&irc, &channel, &sender));
                     }
-                },
+                }
             );
             for cmd in &plugin.meta.commands {
                 let cmd_string = format!("{}{}", prefix, cmd.name);
@@ -206,7 +206,7 @@ impl hiirc::Listener for SyncBoncaListener {
                                     Context::new(&irc, &channel, &sender),
                                 );
                             }
-                        },
+                        }
                     );
                 }
             }
@@ -226,7 +226,7 @@ fn main() {
                     config::PATH,
                     e
                 );
-            },
+            }
         );
         println!(
             "Created configuration file \"{}\". Please review it.",
@@ -249,7 +249,7 @@ fn main() {
             settings
                 .dispatch(listener_clone)
                 .unwrap_or_else(|e| panic!("Failed to dispatch: {:?}", e));
-        },
+        }
     );
 
     let zmq_ctx = zmq::Context::new();

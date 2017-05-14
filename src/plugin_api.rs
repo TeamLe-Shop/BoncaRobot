@@ -69,7 +69,7 @@ impl PluginMeta {
                     name: name,
                     help: help,
                     fun: fun,
-                },
+                }
             )
     }
 }

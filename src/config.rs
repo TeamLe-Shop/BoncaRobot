@@ -84,7 +84,7 @@ pub fn load_config_for_plugin(name: &str) -> Result<Plugin, LoadError> {
                 Plugin {
                     name: name.to_owned(),
                     options: get_plugin_opts(options),
-                },
+                }
             );
         }
     );
@@ -176,7 +176,7 @@ pub fn load() -> Result<Config, LoadError> {
                 Plugin {
                     name: name.clone(),
                     options: get_plugin_opts(options),
-                },
+                }
             )
         }
     );
@@ -187,6 +187,6 @@ pub fn load() -> Result<Config, LoadError> {
             channels: channels,
             nick: nick,
             server: server,
-        },
+        }
     )
 }
