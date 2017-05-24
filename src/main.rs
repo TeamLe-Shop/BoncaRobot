@@ -227,7 +227,7 @@ fn main() {
         return;
     }
 
-    let config = config::load().unwrap();
+    let config = config::load().unwrap_or_else(|e| panic!("Error loading config: {}", e));
     let mut server = config.server.url.clone();
     let nick = config.bot.nick.clone();
     server.push_str(":6667");
@@ -330,7 +330,10 @@ fn main() {
                     }
                 }
                 "reload-cfg" => {
-                    *config.lock().unwrap() = config::load().unwrap();
+                    match config::load() {
+                        Ok(cfg) => *config.lock().unwrap() = cfg,
+                        Err(e) => writeln!(&mut reply, "{}", e).unwrap(),
+                    }
                 }
                 "join" => {
                     match words.next() {
