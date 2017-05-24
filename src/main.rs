@@ -16,9 +16,9 @@ use libloading::Library;
 use plugin_api::{Plugin, PluginMeta, Context};
 use std::collections::HashMap;
 use std::error::Error;
+use std::mem::ManuallyDrop;
 use std::sync::{Arc, Mutex};
 use std::thread;
-use std::mem::ManuallyDrop;
 
 struct PluginContainer {
     plugin: ManuallyDrop<Arc<Mutex<Plugin>>>,
@@ -69,13 +69,11 @@ fn load_plugin(name: &str) -> Result<PluginContainer, Box<Error>> {
     };
     let mut meta = PluginMeta::default();
     plugin.lock().unwrap().register(&mut meta);
-    Ok(
-        PluginContainer {
-            plugin: ManuallyDrop::new(plugin),
-            meta: ManuallyDrop::new(meta),
-            lib: ManuallyDrop::new(lib),
-        }
-    )
+    Ok(PluginContainer {
+        plugin: ManuallyDrop::new(plugin),
+        meta: ManuallyDrop::new(meta),
+        lib: ManuallyDrop::new(lib),
+    })
 }
 
 struct BoncaListener {
@@ -175,41 +173,37 @@ impl hiirc::Listener for SyncBoncaListener {
         }
 
         for plugin in lis.plugins.values_mut() {
-            std::thread::spawn(
-                {
-                    let plugin = plugin.plugin.clone();
-                    let message = message.to_owned();
-                    let irc = irc.clone();
-                    let channel = channel.clone();
-                    let sender = sender.clone();
-                    move || {
-                        plugin
-                            .lock()
-                            .unwrap()
-                            .channel_msg(&message, Context::new(&irc, &channel, &sender));
-                    }
+            std::thread::spawn({
+                let plugin = plugin.plugin.clone();
+                let message = message.to_owned();
+                let irc = irc.clone();
+                let channel = channel.clone();
+                let sender = sender.clone();
+                move || {
+                    plugin
+                        .lock()
+                        .unwrap()
+                        .channel_msg(&message, Context::new(&irc, &channel, &sender));
                 }
-            );
+            });
             for cmd in &plugin.meta.commands {
                 let cmd_string = format!("{}{}", prefix, cmd.name);
                 if message.starts_with(&cmd_string) {
-                    std::thread::spawn(
-                        {
-                            let plugin = plugin.plugin.clone();
-                            let irc = irc.clone();
-                            let channel = channel.clone();
-                            let sender = sender.clone();
-                            let arg = message[cmd_string.len()..].trim_left().to_owned();
-                            let fun = cmd.fun;
-                            move || {
-                                fun(
-                                    &mut *plugin.lock().unwrap(),
-                                    &arg,
-                                    Context::new(&irc, &channel, &sender),
-                                );
-                            }
+                    std::thread::spawn({
+                        let plugin = plugin.plugin.clone();
+                        let irc = irc.clone();
+                        let channel = channel.clone();
+                        let sender = sender.clone();
+                        let arg = message[cmd_string.len()..].trim_left().to_owned();
+                        let fun = cmd.fun;
+                        move || {
+                            fun(
+                                &mut *plugin.lock().unwrap(),
+                                &arg,
+                                Context::new(&irc, &channel, &sender),
+                            );
                         }
-                    );
+                    });
                 }
             }
         }
@@ -220,16 +214,15 @@ fn main() {
     // If the configuration file does not exist, try copying over the template.
     if !std::path::Path::new(config::PATH).exists() {
         const TEMPLATE_PATH: &'static str = "boncarobot.template.toml";
-        std::fs::copy(TEMPLATE_PATH, config::PATH).unwrap_or_else(
-            |e| {
+        std::fs::copy(TEMPLATE_PATH, config::PATH)
+            .unwrap_or_else(|e| {
                 panic!(
                     "Could not copy {} to {}. Try copying it manually. (error: {})",
                     TEMPLATE_PATH,
                     config::PATH,
                     e
                 );
-            }
-        );
+            });
         println!(
             "Created configuration file \"{}\". Please review it.",
             config::PATH
@@ -245,14 +238,12 @@ fn main() {
 
     let listener = SyncBoncaListener::new(config.clone());
     let listener_clone = listener.clone();
-    thread::spawn(
-        move || {
-            let settings = hiirc::Settings::new(&server, &nick);
-            settings
-                .dispatch(listener_clone)
-                .unwrap_or_else(|e| panic!("Failed to dispatch: {:?}", e));
-        }
-    );
+    thread::spawn(move || {
+        let settings = hiirc::Settings::new(&server, &nick);
+        settings
+            .dispatch(listener_clone)
+            .unwrap_or_else(|e| panic!("Failed to dispatch: {:?}", e));
+    });
 
     let zmq_ctx = zmq::Context::new();
     let sock = zmq_ctx.socket(zmq::SocketType::REP).unwrap();
@@ -307,7 +298,8 @@ fn main() {
                     match words.next() {
                         Some(name) => {
                             if lis.plugins.remove(name).is_some() {
-                                writeln!(&mut reply, "Removed \"{}\" plugin.", name).unwrap();
+                                writeln!(&mut reply, "Removed \"{}\" plugin.", name)
+                                    .unwrap();
                                 for channel in lis.irc.as_ref().unwrap().channels() {
                                     lis.msg(
                                         channel.name(),
@@ -358,7 +350,10 @@ fn main() {
                         Some(name) => {
                             lis.leave(name);
                         }
-                        None => writeln!(&mut reply, "Need a channel name to leave").unwrap(),
+                        None => {
+                            writeln!(&mut reply, "Need a channel name to leave")
+                                .unwrap()
+                        }
                     }
                 }
                 _ => writeln!(&mut reply, "Unknown command, bro.").unwrap(),
