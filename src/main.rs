@@ -92,7 +92,7 @@ impl BoncaListener {
             let cfg = config.lock().unwrap();
 
             for k in cfg.plugins.keys() {
-                plugins.insert(k.clone(), load_plugin(&k).unwrap());
+                plugins.insert(k.clone(), load_plugin(k).unwrap());
             }
         }
 
