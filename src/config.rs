@@ -31,9 +31,9 @@ pub const PATH: &'static str = "boncarobot.toml";
 
 fn load_file_to_string() -> Result<String, io::Error> {
     use std::fs::File;
-    let mut file = try!(File::open(PATH));
+    let mut file = File::open(PATH)?;
     let mut buf = String::new();
-    try!(file.read_to_string(&mut buf));
+    file.read_to_string(&mut buf)?;
     Ok(buf)
 }
 
