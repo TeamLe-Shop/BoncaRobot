@@ -3,6 +3,9 @@ extern crate toml;
 extern crate libloading;
 extern crate zmq;
 extern crate plugin_api;
+extern crate serde;
+#[macro_use]
+extern crate serde_derive;
 
 mod config;
 
@@ -31,23 +34,12 @@ fn reload_plugin(
     plugins: &mut HashMap<String, PluginContainer>,
 ) -> Result<(), Box<Error>> {
     plugins.remove(name);
-    // Reload the configuration
-    let cfg = match config::load_config_for_plugin(name) {
-        Ok(config) => config,
-        Err(e) => {
-            println!("Warning: Failed to load config for plugin: {}", e);
-            config::Plugin {
-                name: name.into(),
-                options: HashMap::new(),
-            }
-        }
-    };
-    let plugin = load_plugin(&cfg)?;
+    let plugin = load_plugin(name)?;
     plugins.insert(name.into(), plugin);
     Ok(())
 }
 
-fn load_plugin(plugin: &config::Plugin) -> Result<PluginContainer, Box<Error>> {
+fn load_plugin(name: &str) -> Result<PluginContainer, Box<Error>> {
     use std::env::consts::{DLL_PREFIX, DLL_SUFFIX};
     #[cfg(debug_assertions)]
     let root = "target/debug";
@@ -57,7 +49,7 @@ fn load_plugin(plugin: &config::Plugin) -> Result<PluginContainer, Box<Error>> {
         "{dir}/{prefix}{name}{suffix}",
         dir = root,
         prefix = DLL_PREFIX,
-        name = plugin.name,
+        name = name,
         suffix = DLL_SUFFIX
     );
     let lib = Library::new(path)?;
@@ -89,8 +81,8 @@ impl BoncaListener {
         {
             let cfg = config.lock().unwrap();
 
-            for plugin in &cfg.plugins {
-                plugins.insert(plugin.name.clone(), load_plugin(plugin).unwrap());
+            for k in cfg.plugins.keys() {
+                plugins.insert(k.clone(), load_plugin(&k).unwrap());
             }
         }
 
@@ -127,7 +119,7 @@ impl hiirc::Listener for SyncBoncaListener {
     fn welcome(&mut self, irc: Arc<hiirc::Irc>) {
         let mut lis = self.0.lock().unwrap();
         lis.irc = Some(irc.clone());
-        for c in &lis.config.lock().unwrap().channels {
+        for c in &lis.config.lock().unwrap().bot.channels {
             irc.join(c, None).unwrap();
         }
     }
@@ -140,7 +132,7 @@ impl hiirc::Listener for SyncBoncaListener {
     ) {
         use std::fmt::Write;
         let mut lis = self.0.lock().unwrap();
-        let prefix = lis.config.lock().unwrap().cmd_prefix.clone();
+        let prefix = lis.config.lock().unwrap().bot.cmd_prefix.clone();
         let help_string = format!("{}help", prefix.clone());
 
         if message.starts_with(&help_string) {
@@ -236,8 +228,8 @@ fn main() {
     }
 
     let config = config::load().unwrap();
-    let mut server = config.server.clone();
-    let nick = config.nick.clone();
+    let mut server = config.server.url.clone();
+    let nick = config.bot.nick.clone();
     server.push_str(":6667");
     let config = Arc::new(Mutex::new(config));
 
@@ -279,14 +271,9 @@ fn main() {
                     }
                 }
                 "load" => {
-                    use std::collections::HashMap;
                     match words.next() {
                         Some(name) => {
-                            let plugin = config::Plugin {
-                                name: name.to_owned(),
-                                options: HashMap::new(),
-                            };
-                            match load_plugin(&plugin) {
+                            match load_plugin(name) {
                                 Ok(pc) => {
                                     lis.plugins.insert(name.to_owned(), pc);
                                     writeln!(&mut reply, "Loaded \"{}\" plugin.", name).unwrap();
