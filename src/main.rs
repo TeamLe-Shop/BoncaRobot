@@ -339,17 +339,13 @@ fn main() {
                 }
                 "join" => {
                     match words.next() {
-                        Some(name) => {
-                            lis.join(name);
-                        }
+                        Some(name) => lis.join(name),
                         None => writeln!(&mut reply, "Need a channel name to join").unwrap(),
                     }
                 }
                 "leave" => {
                     match words.next() {
-                        Some(name) => {
-                            lis.leave(name);
-                        }
+                        Some(name) => lis.leave(name),
                         None => {
                             writeln!(&mut reply, "Need a channel name to leave")
                                 .unwrap()
