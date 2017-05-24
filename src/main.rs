@@ -1,3 +1,5 @@
+#![feature(manually_drop)]
+
 extern crate hiirc;
 extern crate toml;
 extern crate libloading;
@@ -16,17 +18,25 @@ use std::collections::HashMap;
 use std::error::Error;
 use std::sync::{Arc, Mutex};
 use std::thread;
+use std::mem::ManuallyDrop;
 
 struct PluginContainer {
-    plugin: Arc<Mutex<Plugin>>,
-    /// The `Library` must kept alive as long as code from the plugin can run.
-    ///
-    /// WARNING: We are relying here on the current unspecified FIFO drop order of Rust.
-    ///
-    /// `_lib` must be dropped last, because the plugin can run drop code that would be
-    /// destroyed if the library was destroyed first.
-    meta: PluginMeta,
-    _lib: Library,
+    plugin: ManuallyDrop<Arc<Mutex<Plugin>>>,
+    meta: ManuallyDrop<PluginMeta>,
+    lib: ManuallyDrop<Library>,
+}
+
+impl Drop for PluginContainer {
+    fn drop(&mut self) {
+        unsafe {
+            // First drop the plugin, as it depends on both meta and lib
+            ManuallyDrop::drop(&mut self.plugin);
+            // Drop meta, it depends on lib
+            ManuallyDrop::drop(&mut self.meta);
+            // Finally drop the lib
+            ManuallyDrop::drop(&mut self.lib);
+        }
+    }
 }
 
 fn reload_plugin(
@@ -61,9 +71,9 @@ fn load_plugin(name: &str) -> Result<PluginContainer, Box<Error>> {
     plugin.lock().unwrap().register(&mut meta);
     Ok(
         PluginContainer {
-            plugin: plugin,
-            meta: meta,
-            _lib: lib,
+            plugin: ManuallyDrop::new(plugin),
+            meta: ManuallyDrop::new(meta),
+            lib: ManuallyDrop::new(lib),
         }
     )
 }
