@@ -180,10 +180,10 @@ impl hiirc::Listener for SyncBoncaListener {
                 let channel = channel.clone();
                 let sender = sender.clone();
                 move || {
-                    plugin
-                        .lock()
-                        .unwrap()
-                        .channel_msg(&message, Context::new(&irc, &channel, &sender));
+                    plugin.lock().unwrap().channel_msg(
+                        &message,
+                        Context::new(&irc, &channel, &sender),
+                    );
                 }
             });
             for cmd in &plugin.meta.commands {
@@ -214,15 +214,14 @@ fn main() {
     // If the configuration file does not exist, try copying over the template.
     if !std::path::Path::new(config::PATH).exists() {
         const TEMPLATE_PATH: &'static str = "boncarobot.template.toml";
-        std::fs::copy(TEMPLATE_PATH, config::PATH)
-            .unwrap_or_else(|e| {
-                panic!(
-                    "Could not copy {} to {}. Try copying it manually. (error: {})",
-                    TEMPLATE_PATH,
-                    config::PATH,
-                    e
-                );
-            });
+        std::fs::copy(TEMPLATE_PATH, config::PATH).unwrap_or_else(|e| {
+            panic!(
+                "Could not copy {} to {}. Try copying it manually. (error: {})",
+                TEMPLATE_PATH,
+                config::PATH,
+                e
+            );
+        });
         println!(
             "Created configuration file \"{}\". Please review it.",
             config::PATH
@@ -240,9 +239,9 @@ fn main() {
     let listener_clone = listener.clone();
     thread::spawn(move || {
         let settings = hiirc::Settings::new(&server, &nick);
-        settings
-            .dispatch(listener_clone)
-            .unwrap_or_else(|e| panic!("Failed to dispatch: {:?}", e));
+        settings.dispatch(listener_clone).unwrap_or_else(|e| {
+                panic!("Failed to dispatch: {:?}", e)
+            });
     });
 
     let zmq_ctx = zmq::Context::new();
@@ -298,8 +297,7 @@ fn main() {
                     match words.next() {
                         Some(name) => {
                             if lis.plugins.remove(name).is_some() {
-                                writeln!(&mut reply, "Removed \"{}\" plugin.", name)
-                                    .unwrap();
+                                writeln!(&mut reply, "Removed \"{}\" plugin.", name).unwrap();
                                 for channel in lis.irc.as_ref().unwrap().channels() {
                                     lis.msg(
                                         channel.name(),
@@ -346,10 +344,7 @@ fn main() {
                 "leave" => {
                     match words.next() {
                         Some(name) => lis.leave(name),
-                        None => {
-                            writeln!(&mut reply, "Need a channel name to leave")
-                                .unwrap()
-                        }
+                        None => writeln!(&mut reply, "Need a channel name to leave").unwrap(),
                     }
                 }
                 _ => writeln!(&mut reply, "Unknown command, bro.").unwrap(),
