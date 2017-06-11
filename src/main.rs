@@ -240,8 +240,8 @@ fn main() {
     thread::spawn(move || {
         let settings = hiirc::Settings::new(&server, &nick);
         settings.dispatch(listener_clone).unwrap_or_else(|e| {
-                panic!("Failed to dispatch: {:?}", e)
-            });
+            panic!("Failed to dispatch: {:?}", e)
+        });
     });
 
     let zmq_ctx = zmq::Context::new();
