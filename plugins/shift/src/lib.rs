@@ -7,18 +7,16 @@ struct ShiftPlugin;
 
 impl ShiftPlugin {
     fn shl(_this: &mut Plugin, arg: &str, ctx: Context) {
-        let _ = ctx.irc
-            .privmsg(
-                ctx.channel.name(),
-                &format!("{}: {}", ctx.sender.nickname(), &shl(arg)),
-            );
+        let _ = ctx.irc.privmsg(
+            ctx.channel.name(),
+            &format!("{}: {}", ctx.sender.nickname(), &shl(arg)),
+        );
     }
     fn shr(_this: &mut Plugin, arg: &str, ctx: Context) {
-        let _ = ctx.irc
-            .privmsg(
-                ctx.channel.name(),
-                &format!("{}: {}", ctx.sender.nickname(), &shr(arg)),
-            );
+        let _ = ctx.irc.privmsg(
+            ctx.channel.name(),
+            &format!("{}: {}", ctx.sender.nickname(), &shr(arg)),
+        );
     }
 }
 
@@ -64,18 +62,16 @@ fn find_shr(seq: &[u8], c: char) -> Option<char> {
 
 fn driver<T: Fn(&[u8], char) -> Option<char>>(txt: &str, f: T) -> String {
     txt.chars()
-        .map(
-            |c| {
-                f(b"qwertyuiop", c)
-                    .or_else(|| f(b"QWERTYUIOP", c))
-                    .or_else(|| f(b"asdfghjkl", c))
-                    .or_else(|| f(b"ASDFGHJKL", c))
-                    .or_else(|| f(b"zxcvbnm", c))
-                    .or_else(|| f(b"ZXCVBNM", c))
-                    .or_else(|| f(b"1234567890", c))
-                    .unwrap_or(c)
-            },
-        )
+        .map(|c| {
+            f(b"qwertyuiop", c)
+                .or_else(|| f(b"QWERTYUIOP", c))
+                .or_else(|| f(b"asdfghjkl", c))
+                .or_else(|| f(b"ASDFGHJKL", c))
+                .or_else(|| f(b"zxcvbnm", c))
+                .or_else(|| f(b"ZXCVBNM", c))
+                .or_else(|| f(b"1234567890", c))
+                .unwrap_or(c)
+        })
         .collect()
 }
 

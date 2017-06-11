@@ -19,11 +19,10 @@ impl CalcPlugin {
                 Err(e) => response.push_str(&e.to_string()),
             }
             response.push_str(", ");
-            let _ = ctx.irc
-                .privmsg(
-                    ctx.channel.name(),
-                    &format!("{}: {}", ctx.sender.nickname(), response),
-                );
+            let _ = ctx.irc.privmsg(
+                ctx.channel.name(),
+                &format!("{}: {}", ctx.sender.nickname(), response),
+            );
         }
     }
 }

@@ -15,22 +15,19 @@ impl IsoLangPlugin {
         let response = this.map
             .get(arg)
             .cloned()
-            .or_else(
-                || {
-                    for (k, v) in &this.map {
-                        if v.to_lowercase().contains(&arg.to_lowercase()) {
-                            return Some(format!("{} => {}", v, k));
-                        }
+            .or_else(|| {
+                for (k, v) in &this.map {
+                    if v.to_lowercase().contains(&arg.to_lowercase()) {
+                        return Some(format!("{} => {}", v, k));
                     }
-                    None
-                },
-            )
+                }
+                None
+            })
             .unwrap_or_else(|| "ISO MOTHERFUCKER, DO YOU SPEAK IT?".into());
-        let _ = ctx.irc
-            .privmsg(
-                ctx.channel.name(),
-                &format!("{}: {}", ctx.sender.nickname(), response),
-            );
+        let _ = ctx.irc.privmsg(
+            ctx.channel.name(),
+            &format!("{}: {}", ctx.sender.nickname(), response),
+        );
     }
 }
 
