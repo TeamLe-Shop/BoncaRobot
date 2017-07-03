@@ -40,10 +40,11 @@ impl UdPlugin {
                         return;
                     }
                 };
-                let _ = ctx.irc.privmsg(
-                    ctx.channel.name(),
-                    json["list"][0]["definition"].as_str().unwrap(),
-                );
+                eprintln!("{:#?}", json);
+                let entry = json["list"][0]["definition"].as_str().unwrap();
+                for line in entry.lines() {
+                    let _ = ctx.irc.privmsg(ctx.channel.name(), line);
+                }
             }
             Err(e) => {
                 let _ = ctx.irc
