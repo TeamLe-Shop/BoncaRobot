@@ -1,8 +1,10 @@
 [root]
-name = "template"
+name = "ud"
 version = "0.1.0"
 dependencies = [
  "boncarobot 0.1.0",
+ "hyper 0.10.10 (registry+https://github.com/rust-lang/crates.io-index)",
+ "json 0.11.7 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
@@ -225,6 +227,11 @@ dependencies = [
  "boncarobot 0.1.0",
  "csv 0.15.0 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
+
+[[package]]
+name = "json"
+version = "0.11.7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
 name = "kernel32-sys"
@@ -578,6 +585,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "template"
+version = "0.1.0"
+dependencies = [
+ "boncarobot 0.1.0",
+]
+
+[[package]]
 name = "tendril"
 version = "0.2.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -739,6 +753,7 @@ dependencies = [
 "checksum httparse 1.2.2 (registry+https://github.com/rust-lang/crates.io-index)" = "77f756bed9ee3a83ce98774f4155b42a31b787029013f3a7d83eca714e500e21"
 "checksum hyper 0.10.10 (registry+https://github.com/rust-lang/crates.io-index)" = "36e108e0b1fa2d17491cbaac4bc460dc0956029d10ccf83c913dd0e5db3e7f07"
 "checksum idna 0.1.2 (registry+https://github.com/rust-lang/crates.io-index)" = "2233d4940b1f19f0418c158509cd7396b8d70a5db5705ce410914dc8fa603b37"
+"checksum json 0.11.7 (registry+https://github.com/rust-lang/crates.io-index)" = "e3f8d9a1f886714db1d776dcb0ef47a04b49cb70f91f986e9e2c170a57762df3"
 "checksum kernel32-sys 0.2.2 (registry+https://github.com/rust-lang/crates.io-index)" = "7507624b29483431c0ba2d82aece8ca6cdba9382bff4ddd0f7490560c056098d"
 "checksum language-tags 0.2.2 (registry+https://github.com/rust-lang/crates.io-index)" = "a91d884b6667cd606bb5a69aa0c99ba811a115fc68915e7056ec08a46e93199a"
 "checksum lazy_static 0.2.8 (registry+https://github.com/rust-lang/crates.io-index)" = "3b37545ab726dd833ec6420aaba8231c5b320814b9029ad585555d2a03e94fbf"
