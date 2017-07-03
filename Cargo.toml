@@ -19,3 +19,6 @@ members = ["plugins/*"]
 [lib]
 name = "plugin_api"
 path = "src/plugin_api.rs"
+
+[profile.release]
+panic = "abort"
