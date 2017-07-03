@@ -22,3 +22,4 @@ command-prefix = ""
 # Feex eet, white male.
 [plugins.searchfix]
 [plugins.isolang]
+[plugins.ud]
