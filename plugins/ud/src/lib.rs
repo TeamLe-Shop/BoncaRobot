@@ -41,7 +41,14 @@ impl UdPlugin {
                     }
                 };
                 eprintln!("{:#?}", json);
-                let entry = json["list"][0]["definition"].as_str().unwrap();
+                let entry = match json["list"][0]["definition"].as_str() {
+                    Some(entry) => entry,
+                    None => {
+                        let _ = ctx.irc
+                            .privmsg(ctx.channel.name(), "ENGLISH, MOTHERFUCKER.");
+                        return;
+                    }
+                };
                 for line in entry.lines() {
                     let _ = ctx.irc.privmsg(ctx.channel.name(), line);
                 }
