@@ -180,10 +180,10 @@ impl hiirc::Listener for SyncBoncaListener {
                 let channel = channel.clone();
                 let sender = sender.clone();
                 move || {
-                    plugin
-                        .lock()
-                        .unwrap()
-                        .channel_msg(&message, Context::new(&irc, &channel, &sender));
+                    plugin.lock().unwrap().channel_msg(
+                        &message,
+                        Context::new(&irc, &channel, &sender),
+                    );
                 }
             });
             for cmd in &plugin.meta.commands {
@@ -239,9 +239,9 @@ fn main() {
     let listener_clone = listener.clone();
     thread::spawn(move || {
         let settings = hiirc::Settings::new(&server, &nick);
-        settings
-            .dispatch(listener_clone)
-            .unwrap_or_else(|e| panic!("Failed to dispatch: {:?}", e));
+        settings.dispatch(listener_clone).unwrap_or_else(|e| {
+            panic!("Failed to dispatch: {:?}", e)
+        });
     });
 
     let zmq_ctx = zmq::Context::new();

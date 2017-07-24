@@ -1,4 +1,4 @@
-extern crate hyper;
+extern crate reqwest;
 extern crate json;
 #[macro_use]
 extern crate plugin_api;
@@ -8,17 +8,17 @@ use std::error::Error;
 use std::io::prelude::*;
 
 pub fn query(query: &str) -> Result<String, Box<Error>> {
-    let client = hyper::Client::new();
-
     let msg = format!("http://api.urbandictionary.com/v0/define?term={}", query);
 
-    let mut res = client.get(&msg).send()?;
-    if res.status != hyper::Ok {
+    let mut resp = reqwest::get(&msg)?;
+
+    if !resp.status().is_success() {
         return Err("Something went wrong with the request".into());
     }
-    let mut body = Vec::new();
-    res.read_to_end(&mut body)?;
-    Ok(String::from_utf8_lossy(&body).into_owned())
+
+    let mut content = Vec::new();
+    resp.read_to_end(&mut content)?;
+    Ok(String::from_utf8_lossy(&content).into_owned())
 }
 
 struct UdPlugin;
@@ -26,8 +26,10 @@ struct UdPlugin;
 impl UdPlugin {
     fn ud(_this: &mut Plugin, arg: &str, ctx: Context) {
         if arg.is_empty() {
-            let _ = ctx.irc
-                .privmsg(ctx.channel.name(), "You need to search for something bro.");
+            let _ = ctx.irc.privmsg(
+                ctx.channel.name(),
+                "You need to search for something bro.",
+            );
             return;
         }
         match query(arg) {
@@ -35,8 +37,10 @@ impl UdPlugin {
                 let json = match json::parse(&body) {
                     Ok(json) => json,
                     Err(e) => {
-                        let _ = ctx.irc
-                            .privmsg(ctx.channel.name(), &format!("Phailed parsing json ({})", e));
+                        let _ = ctx.irc.privmsg(
+                            ctx.channel.name(),
+                            &format!("Phailed parsing json ({})", e),
+                        );
                         return;
                     }
                 };
@@ -44,8 +48,10 @@ impl UdPlugin {
                 let entry = match json["list"][0]["definition"].as_str() {
                     Some(entry) => entry,
                     None => {
-                        let _ = ctx.irc
-                            .privmsg(ctx.channel.name(), "ENGLISH, MOTHERFUCKER.");
+                        let _ = ctx.irc.privmsg(
+                            ctx.channel.name(),
+                            "ENGLISH, MOTHERFUCKER.",
+                        );
                         return;
                     }
                 };
@@ -54,8 +60,10 @@ impl UdPlugin {
                 }
             }
             Err(e) => {
-                let _ = ctx.irc
-                    .privmsg(ctx.channel.name(), &format!("Error when uding: {}", e));
+                let _ = ctx.irc.privmsg(
+                    ctx.channel.name(),
+                    &format!("Error when uding: {}", e),
+                );
             }
         }
     }
