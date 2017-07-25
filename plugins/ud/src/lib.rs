@@ -44,7 +44,6 @@ impl UdPlugin {
                         return;
                     }
                 };
-                eprintln!("{:#?}", json);
                 let entry = match json["list"][0]["definition"].as_str() {
                     Some(entry) => entry,
                     None => {
