@@ -1,6 +1,6 @@
+extern crate csv;
 #[macro_use]
 extern crate plugin_api;
-extern crate csv;
 
 use plugin_api::prelude::*;
 use std::collections::HashMap;

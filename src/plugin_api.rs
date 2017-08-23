@@ -2,15 +2,15 @@
 
 //! The plugin API.
 
-pub extern crate hiirc;
 #[macro_use]
 extern crate downcast_rs;
+pub extern crate hiirc;
 
 use downcast_rs::Downcast;
 
 /// The most commonly used types when implementing a plugin.
 pub mod prelude {
-    pub use super::{Plugin, PluginMeta, Context};
+    pub use super::{Context, Plugin, PluginMeta};
     pub use hiirc::IrcWrite;
 }
 

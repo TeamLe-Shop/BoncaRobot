@@ -1,5 +1,5 @@
-extern crate zmq;
 extern crate rustyline;
+extern crate zmq;
 
 use rustyline::Editor;
 use rustyline::error::ReadlineError;
@@ -21,8 +21,7 @@ fn main() {
                 }
                 Err(e) => {
                     match e {
-                        ReadlineError::Eof |
-                        ReadlineError::Interrupted => {}
+                        ReadlineError::Eof | ReadlineError::Interrupted => {}
                         _ => panic!("error: {}", e),
                     }
                     return;

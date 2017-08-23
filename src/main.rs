@@ -1,17 +1,17 @@
 extern crate hiirc;
-extern crate toml;
 extern crate libloading;
-extern crate zmq;
 extern crate plugin_api;
 extern crate serde;
 #[macro_use]
 extern crate serde_derive;
+extern crate toml;
+extern crate zmq;
 
 mod config;
 
 use hiirc::IrcWrite;
 use libloading::Library;
-use plugin_api::{Plugin, PluginMeta, Context};
+use plugin_api::{Context, Plugin, PluginMeta};
 use std::collections::HashMap;
 use std::error::Error;
 use std::mem::ManuallyDrop;
@@ -178,10 +178,10 @@ impl hiirc::Listener for SyncBoncaListener {
                 let channel = channel.clone();
                 let sender = sender.clone();
                 move || {
-                    plugin.lock().unwrap().channel_msg(
-                        &message,
-                        Context::new(&irc, &channel, &sender),
-                    );
+                    plugin
+                        .lock()
+                        .unwrap()
+                        .channel_msg(&message, Context::new(&irc, &channel, &sender));
                 }
             });
             for cmd in &plugin.meta.commands {
@@ -237,9 +237,9 @@ fn main() {
     let listener_clone = listener.clone();
     thread::spawn(move || {
         let settings = hiirc::Settings::new(&server, &nick);
-        settings.dispatch(listener_clone).unwrap_or_else(|e| {
-            panic!("Failed to dispatch: {:?}", e)
-        });
+        settings
+            .dispatch(listener_clone)
+            .unwrap_or_else(|e| panic!("Failed to dispatch: {:?}", e));
     });
 
     let zmq_ctx = zmq::Context::new();
@@ -259,92 +259,66 @@ fn main() {
                     lis.request_quit(words.next());
                     quit_requested = true;
                 }
-                "say" => {
-                    match words.next() {
-                        Some(channel) => {
-                            let msg = words.collect::<Vec<_>>().join(" ");
-                            lis.msg(channel, &msg);
-                        }
-                        None => writeln!(&mut reply, "Need channel, buddy.").unwrap(),
+                "say" => match words.next() {
+                    Some(channel) => {
+                        let msg = words.collect::<Vec<_>>().join(" ");
+                        lis.msg(channel, &msg);
                     }
-                }
-                "load" => {
-                    match words.next() {
-                        Some(name) => {
-                            match load_plugin(name) {
-                                Ok(pc) => {
-                                    lis.plugins.insert(name.to_owned(), pc);
-                                    writeln!(&mut reply, "Loaded \"{}\" plugin.", name).unwrap();
-                                    for channel in lis.irc.as_ref().unwrap().channels() {
-                                        lis.msg(
-                                            channel.name(),
-                                            &format!("[Plugin '{}' was loaded]", name),
-                                        );
-                                    }
-                                }
-                                Err(e) => {
-                                    writeln!(&mut reply, "Failed to load \"{}\": {}", name, e)
-                                        .unwrap();
-                                }
+                    None => writeln!(&mut reply, "Need channel, buddy.").unwrap(),
+                },
+                "load" => match words.next() {
+                    Some(name) => match load_plugin(name) {
+                        Ok(pc) => {
+                            lis.plugins.insert(name.to_owned(), pc);
+                            writeln!(&mut reply, "Loaded \"{}\" plugin.", name).unwrap();
+                            for channel in lis.irc.as_ref().unwrap().channels() {
+                                lis.msg(channel.name(), &format!("[Plugin '{}' was loaded]", name));
                             }
                         }
-                        None => writeln!(&mut reply, "Name, please!").unwrap(),
-                    }
-                }
-                "unload" => {
-                    match words.next() {
-                        Some(name) => {
-                            if lis.plugins.remove(name).is_some() {
-                                writeln!(&mut reply, "Removed \"{}\" plugin.", name).unwrap();
-                                for channel in lis.irc.as_ref().unwrap().channels() {
-                                    lis.msg(
-                                        channel.name(),
-                                        &format!("[Plugin '{}' was unloaded]", name),
-                                    );
-                                }
+                        Err(e) => {
+                            writeln!(&mut reply, "Failed to load \"{}\": {}", name, e).unwrap();
+                        }
+                    },
+                    None => writeln!(&mut reply, "Name, please!").unwrap(),
+                },
+                "unload" => match words.next() {
+                    Some(name) => if lis.plugins.remove(name).is_some() {
+                        writeln!(&mut reply, "Removed \"{}\" plugin.", name).unwrap();
+                        for channel in lis.irc.as_ref().unwrap().channels() {
+                            lis.msg(channel.name(), &format!("[Plugin '{}' was unloaded]", name));
+                        }
+                    },
+                    None => writeln!(&mut reply, "Don't forget the name!").unwrap(),
+                },
+                "reload" => match words.next() {
+                    Some(name) => match reload_plugin(name, &mut lis.plugins) {
+                        Ok(()) => {
+                            writeln!(&mut reply, "Reloaded plugin {}", name).unwrap();
+                            for channel in lis.irc.as_ref().unwrap().channels() {
+                                lis.msg(
+                                    channel.name(),
+                                    &format!("[Plugin '{}' was reloaded]", name),
+                                );
                             }
                         }
-                        None => writeln!(&mut reply, "Don't forget the name!").unwrap(),
-                    }
-                }
-                "reload" => {
-                    match words.next() {
-                        Some(name) => {
-                            match reload_plugin(name, &mut lis.plugins) {
-                                Ok(()) => {
-                                    writeln!(&mut reply, "Reloaded plugin {}", name).unwrap();
-                                    for channel in lis.irc.as_ref().unwrap().channels() {
-                                    lis.msg(channel.name(),
-                                            &format!("[Plugin '{}' was reloaded]", name));
-                                    }
-                                }
-                                Err(e) => {
-                                    writeln!(&mut reply, "Failed to reload plugin {}: {}", name, e)
-                                        .unwrap()
-                                }
-                            }
+                        Err(e) => {
+                            writeln!(&mut reply, "Failed to reload plugin {}: {}", name, e).unwrap()
                         }
-                        None => writeln!(&mut reply, "Need a name, faggot").unwrap(),
-                    }
-                }
-                "reload-cfg" => {
-                    match config::load() {
-                        Ok(cfg) => *config.lock().unwrap() = cfg,
-                        Err(e) => writeln!(&mut reply, "{}", e).unwrap(),
-                    }
-                }
-                "join" => {
-                    match words.next() {
-                        Some(name) => lis.join(name),
-                        None => writeln!(&mut reply, "Need a channel name to join").unwrap(),
-                    }
-                }
-                "leave" => {
-                    match words.next() {
-                        Some(name) => lis.leave(name),
-                        None => writeln!(&mut reply, "Need a channel name to leave").unwrap(),
-                    }
-                }
+                    },
+                    None => writeln!(&mut reply, "Need a name, faggot").unwrap(),
+                },
+                "reload-cfg" => match config::load() {
+                    Ok(cfg) => *config.lock().unwrap() = cfg,
+                    Err(e) => writeln!(&mut reply, "{}", e).unwrap(),
+                },
+                "join" => match words.next() {
+                    Some(name) => lis.join(name),
+                    None => writeln!(&mut reply, "Need a channel name to join").unwrap(),
+                },
+                "leave" => match words.next() {
+                    Some(name) => lis.leave(name),
+                    None => writeln!(&mut reply, "Need a channel name to leave").unwrap(),
+                },
                 _ => writeln!(&mut reply, "Unknown command, bro.").unwrap(),
             }
             sock.send(&reply, 0).unwrap();
