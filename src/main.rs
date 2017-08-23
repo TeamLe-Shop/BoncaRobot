@@ -1,5 +1,3 @@
-#![feature(manually_drop)]
-
 extern crate hiirc;
 extern crate toml;
 extern crate libloading;
