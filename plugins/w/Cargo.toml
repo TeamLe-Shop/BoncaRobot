@@ -1,0 +1,20 @@
+[package]
+name = "w"
+version = "0.1.0"
+authors = ["Mika Attila <radiantstatue@gmail.com>"]
+
+[dependencies]
+reqwest = "0.7.1"
+json = "0.11"
+
+[dependencies.boncarobot]
+path ="../../"
+
+[lib]
+name = "w"
+crate-type = ["dylib"]
+# This is important, makes it so that the lib is compiled with
+# rustc -C prefer-dynamic, which is required for
+# things like freeing something in the host that was allocated
+# in the plugin
+plugin = true
