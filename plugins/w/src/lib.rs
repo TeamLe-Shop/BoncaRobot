@@ -14,7 +14,6 @@ fn wikiencode(query: &str) -> String {
 
 pub fn query(query: &str) -> Result<String, Box<Error>> {
     let query = wikiencode(query);
-    eprintln!("{}", query);
 
     let msg = format!(
         "https://en.wikipedia.org/w/api.php?format=json\
