@@ -10,7 +10,41 @@ use std::sync::{Arc, Mutex, MutexGuard};
 pub(crate) struct BoncaListener {
     config: Arc<Mutex<Config>>,
     plugins: HashMap<String, PluginContainer>,
-    irc: Option<Arc<Irc>>,
+    pub irc_bridge: IrcBridge,
+}
+
+/// Allows foreign entities (e.g. boncarobot) to manipulate the IRC session
+/// (send messages/join/leave/quit/etc.).
+pub(crate) struct IrcBridge {
+    /// IRC handle. It has delayed initialization, but can be assumed to be always `Some` after
+    /// the initialization.
+    handle: Option<Arc<Irc>>,
+}
+
+impl IrcBridge {
+    fn new() -> Self {
+        Self { handle: None }
+    }
+    fn init(&mut self, irc: Arc<Irc>) {
+        self.handle = Some(irc);
+    }
+    pub fn request_quit(&self, msg: Option<&str>) {
+        self.handle.as_ref().unwrap().quit(msg).unwrap();
+    }
+    pub fn msg(&self, target: &str, text: &str) {
+        self.handle.as_ref().unwrap().privmsg(target, text).unwrap();
+    }
+    pub fn msg_all_joined_channels(&self, text: &str) {
+        for channel in self.handle.as_ref().unwrap().channels() {
+            self.msg(channel.name(), text);
+        }
+    }
+    pub fn join(&self, channel: &str) {
+        self.handle.as_ref().unwrap().join(channel, None).unwrap();
+    }
+    pub fn leave(&self, channel: &str) {
+        self.handle.as_ref().unwrap().part(channel, None).unwrap();
+    }
 }
 
 impl BoncaListener {
@@ -28,25 +62,8 @@ impl BoncaListener {
         BoncaListener {
             config: config,
             plugins: plugins,
-            irc: None,
+            irc_bridge: IrcBridge::new(),
         }
-    }
-    pub fn request_quit(&self, msg: Option<&str>) {
-        self.irc.as_ref().unwrap().quit(msg).unwrap();
-    }
-    pub fn msg(&self, target: &str, text: &str) {
-        self.irc.as_ref().unwrap().privmsg(target, text).unwrap();
-    }
-    pub fn msg_all_joined_channels(&self, text: &str) {
-        for channel in self.irc.as_ref().unwrap().channels() {
-            self.msg(channel.name(), text);
-        }
-    }
-    pub fn join(&self, channel: &str) {
-        self.irc.as_ref().unwrap().join(channel, None).unwrap();
-    }
-    pub fn leave(&self, channel: &str) {
-        self.irc.as_ref().unwrap().part(channel, None).unwrap();
     }
     fn channel_msg(
         &mut self,
@@ -174,7 +191,7 @@ impl SyncBoncaListener {
 impl Listener for SyncBoncaListener {
     fn welcome(&mut self, irc: Arc<Irc>) {
         let mut lis = self.0.lock().unwrap();
-        lis.irc = Some(irc.clone());
+        lis.irc_bridge.init(irc.clone());
         for c in &lis.config.lock().unwrap().bot.channels {
             irc.join(c, None).unwrap();
         }

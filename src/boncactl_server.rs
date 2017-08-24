@@ -40,13 +40,13 @@ fn handle_command(
     let mut reply = String::new();
     match words.next().unwrap() {
         "quit" => {
-            lis.request_quit(words.next());
+            lis.irc_bridge.request_quit(words.next());
             *quit_requested = true;
         }
         "say" => match words.next() {
             Some(channel) => {
                 let msg = words.collect::<Vec<_>>().join(" ");
-                lis.msg(channel, &msg);
+                lis.irc_bridge.msg(channel, &msg);
             }
             None => writeln!(&mut reply, "Need channel, buddy.").unwrap(),
         },
@@ -54,7 +54,8 @@ fn handle_command(
             Some(name) => match lis.load_plugin(name) {
                 Ok(()) => {
                     writeln!(&mut reply, "Loaded \"{}\" plugin.", name).unwrap();
-                    lis.msg_all_joined_channels(&format!("[Plugin '{}' was loaded]", name));
+                    lis.irc_bridge
+                        .msg_all_joined_channels(&format!("[Plugin '{}' was loaded]", name));
                 }
                 Err(e) => {
                     writeln!(&mut reply, "Failed to load \"{}\": {}", name, e).unwrap();
@@ -65,7 +66,8 @@ fn handle_command(
         "unload" => match words.next() {
             Some(name) => if lis.unload_plugin(name) {
                 writeln!(&mut reply, "Removed \"{}\" plugin.", name).unwrap();
-                lis.msg_all_joined_channels(&format!("[Plugin '{}' was unloaded]", name));
+                lis.irc_bridge
+                    .msg_all_joined_channels(&format!("[Plugin '{}' was unloaded]", name));
             },
             None => writeln!(&mut reply, "Don't forget the name!").unwrap(),
         },
@@ -73,7 +75,8 @@ fn handle_command(
             Some(name) => match lis.reload_plugin(name) {
                 Ok(()) => {
                     writeln!(&mut reply, "Reloaded plugin {}", name).unwrap();
-                    lis.msg_all_joined_channels(&format!("[Plugin '{}' was reloaded]", name));
+                    lis.irc_bridge
+                        .msg_all_joined_channels(&format!("[Plugin '{}' was reloaded]", name));
                 }
                 Err(e) => writeln!(&mut reply, "Failed to reload plugin {}: {}", name, e).unwrap(),
             },
@@ -84,11 +87,11 @@ fn handle_command(
             Err(e) => writeln!(&mut reply, "{}", e).unwrap(),
         },
         "join" => match words.next() {
-            Some(name) => lis.join(name),
+            Some(name) => lis.irc_bridge.join(name),
             None => writeln!(&mut reply, "Need a channel name to join").unwrap(),
         },
         "leave" => match words.next() {
-            Some(name) => lis.leave(name),
+            Some(name) => lis.irc_bridge.leave(name),
             None => writeln!(&mut reply, "Need a channel name to leave").unwrap(),
         },
         _ => writeln!(&mut reply, "Unknown command, bro.").unwrap(),
