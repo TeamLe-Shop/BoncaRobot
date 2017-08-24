@@ -1,5 +1,7 @@
 //! Implementation of IPC control.
 
+extern crate zmq;
+
 use config::{self, Config};
 use core::{Core, SharedCore};
 use std::{thread, time};
