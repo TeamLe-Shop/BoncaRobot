@@ -131,6 +131,10 @@ impl Core {
         message: &str,
     ) {
         for plugin in self.plugins.values_mut() {
+            // Delegation is done in two parts:
+
+            // 1: Pass the raw IRC message to the, and let it handle the message
+            // however it wants.
             std::thread::spawn({
                 let plugin = plugin.plugin.clone();
                 let message = message.to_owned();
@@ -144,9 +148,18 @@ impl Core {
                         .channel_msg(&message, Context::new(&irc, &channel, &sender));
                 }
             });
+
+            // 2: There is a separate mechanism for interacting with the bot.
+            // It's called "commands".
+            // Iterate through all the commands of the plugin, and if the message matches
+            // the command, execute it.
+            let command_root = match message.split_whitespace().next() {
+                Some(word) => word,
+                None => return,
+            };
             for cmd in &plugin.meta.commands {
                 let cmd_string = format!("{}{}", prefix, cmd.name);
-                if message.starts_with(&cmd_string) {
+                if command_root == cmd_string {
                     std::thread::spawn({
                         let plugin = plugin.plugin.clone();
                         let irc = irc.clone();
