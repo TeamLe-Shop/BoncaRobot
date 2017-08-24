@@ -24,10 +24,7 @@ impl IsoLangPlugin {
                 None
             })
             .unwrap_or_else(|| "ISO MOTHERFUCKER, DO YOU SPEAK IT?".into());
-        let _ = ctx.irc.privmsg(
-            ctx.channel.name(),
-            &format!("{}: {}", ctx.sender.nickname(), response),
-        );
+        ctx.send_channel(&format!("{}: {}", ctx.sender.nickname(), response));
     }
 }
 

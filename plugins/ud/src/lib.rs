@@ -64,8 +64,7 @@ struct UdPlugin;
 impl UdPlugin {
     fn ud(_this: &mut Plugin, arg: &str, ctx: Context) {
         if arg.is_empty() {
-            let _ = ctx.irc
-                .privmsg(ctx.channel.name(), "You need to search for something bro.");
+            ctx.send_channel("You need to search for something bro.");
             return;
         }
         match query(arg) {
@@ -73,29 +72,26 @@ impl UdPlugin {
                 let json = match json::parse(&body) {
                     Ok(json) => json,
                     Err(e) => {
-                        let _ = ctx.irc
-                            .privmsg(ctx.channel.name(), &format!("Phailed parsing json ({})", e));
+                        ctx.send_channel(&format!("Phailed parsing json ({})", e));
                         return;
                     }
                 };
                 let entry = match json["list"][0]["definition"].as_str() {
                     Some(entry) => entry,
                     None => {
-                        let _ = ctx.irc
-                            .privmsg(ctx.channel.name(), "ENGLISH, MOTHERFUCKER.");
+                        ctx.send_channel("ENGLISH, MOTHERFUCKER.");
                         return;
                     }
                 };
                 for line in entry.lines() {
                     // Spit out text in chunks of 400
                     for chunk in SplitChunks::new(line, 400) {
-                        let _ = ctx.irc.privmsg(ctx.channel.name(), chunk);
+                        ctx.send_channel(chunk);
                     }
                 }
             }
             Err(e) => {
-                let _ = ctx.irc
-                    .privmsg(ctx.channel.name(), &format!("Error when uding: {}", e));
+                ctx.send_channel(&format!("Error when uding: {}", e));
             }
         }
     }

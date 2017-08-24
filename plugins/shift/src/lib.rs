@@ -7,16 +7,10 @@ struct ShiftPlugin;
 
 impl ShiftPlugin {
     fn shl(_this: &mut Plugin, arg: &str, ctx: Context) {
-        let _ = ctx.irc.privmsg(
-            ctx.channel.name(),
-            &format!("{}: {}", ctx.sender.nickname(), &shl(arg)),
-        );
+        ctx.send_channel(&format!("{}: {}", ctx.sender.nickname(), &shl(arg)));
     }
     fn shr(_this: &mut Plugin, arg: &str, ctx: Context) {
-        let _ = ctx.irc.privmsg(
-            ctx.channel.name(),
-            &format!("{}: {}", ctx.sender.nickname(), &shr(arg)),
-        );
+        ctx.send_channel(&format!("{}: {}", ctx.sender.nickname(), &shr(arg)));
     }
 }
 

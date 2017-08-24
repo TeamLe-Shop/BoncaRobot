@@ -14,6 +14,8 @@ pub mod prelude {
     pub use hiirc::IrcWrite;
 }
 
+use prelude::*;
+
 /// IRC context.
 #[derive(Clone, Copy)]
 pub struct Context<'a> {
@@ -37,6 +39,10 @@ impl<'a> Context<'a> {
             channel: channel,
             sender: sender,
         }
+    }
+    /// Send a message to the channel belonging to this context.
+    pub fn send_channel(&self, msg: &str) {
+        let _ = self.irc.privmsg(self.channel.name(), msg);
     }
 }
 

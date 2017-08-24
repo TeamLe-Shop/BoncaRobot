@@ -22,7 +22,7 @@ impl Plugin for SearchFixPlugin {
             let decoded = url::percent_encoding::percent_decode(url.as_bytes())
                 .decode_utf8()
                 .unwrap_or_else(|_| "invalid url".into());
-            let _ = ctx.irc.privmsg(ctx.channel.name(), &decoded);
+            ctx.send_channel(&decoded);
         }
     }
 }

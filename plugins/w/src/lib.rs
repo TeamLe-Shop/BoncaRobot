@@ -38,8 +38,7 @@ struct WPlugin;
 impl WPlugin {
     fn w(_this: &mut Plugin, arg: &str, ctx: Context) {
         if arg.is_empty() {
-            let _ = ctx.irc
-                .privmsg(ctx.channel.name(), "You need to search for something bro.");
+            ctx.send_channel("You need to search for something bro.");
             return;
         }
         match query(arg) {
@@ -47,8 +46,7 @@ impl WPlugin {
                 let json = match json::parse(&body) {
                     Ok(json) => json,
                     Err(e) => {
-                        let _ = ctx.irc
-                            .privmsg(ctx.channel.name(), &format!("Phailed parsing json ({})", e));
+                        ctx.send_channel(&format!("Phailed parsing json ({})", e));
                         return;
                     }
                 };
@@ -57,14 +55,14 @@ impl WPlugin {
                 let page = match pages.entries().nth(0) {
                     Some((_k, v)) => v,
                     None => {
-                        let _ = ctx.irc.privmsg(ctx.channel.name(), "No wiki page found.");
+                        ctx.send_channel("No wiki page found.");
                         return;
                     }
                 };
                 match page["extract"].as_str() {
                     Some(extract) => {
                         for line in extract.lines() {
-                            let _ = ctx.irc.privmsg(ctx.channel.name(), line);
+                            ctx.send_channel(line);
                         }
                         let article_name = match json["query"]["redirects"][0]["to"].as_str() {
                             Some(redirect) => redirect,
@@ -73,17 +71,16 @@ impl WPlugin {
                         let encoded = wikiencode(article_name);
                         let url = format!("https://en.wikipedia.org/wiki/{}", encoded);
 
-                        let _ = ctx.irc.privmsg(ctx.channel.name(), &url);
+                        ctx.send_channel(&url);
                     }
                     None => {
-                        let _ = ctx.irc.privmsg(ctx.channel.name(), r#"¯\_(ツ)_/¯"#);
+                        ctx.send_channel(r#"¯\_(ツ)_/¯"#);
                         return;
                     }
                 }
             }
             Err(e) => {
-                let _ = ctx.irc
-                    .privmsg(ctx.channel.name(), &format!("Error when wikiing: {}", e));
+                ctx.send_channel(&format!("Error when wikiing: {}", e));
             }
         }
     }

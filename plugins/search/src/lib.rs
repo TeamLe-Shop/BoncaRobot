@@ -70,23 +70,19 @@ struct SearchPlugin;
 impl SearchPlugin {
     fn search(_this: &mut Plugin, arg: &str, ctx: Context) {
         if arg.is_empty() {
-            let _ = ctx.irc
-                .privmsg(ctx.channel.name(), "You need to search for something bro.");
-            return;
+            ctx.send_channel("You need to search for something bro.");
         }
         match query_google(arg) {
             Ok(body) => match parse_first_result(&body) {
                 Ok(result) => {
-                    let _ = ctx.irc.privmsg(ctx.channel.name(), &result);
+                    ctx.send_channel(&result);
                 }
                 Err(e) => {
-                    let _ = ctx.irc
-                        .privmsg(ctx.channel.name(), &format!("Error: {}", e));
+                    ctx.send_channel(&format!("Error: {}", e));
                 }
             },
             Err(e) => {
-                let _ = ctx.irc
-                    .privmsg(ctx.channel.name(), &format!("Error when googuring: {}", e));
+                ctx.send_channel(&format!("Error when googuring: {}", e));
             }
         }
     }
