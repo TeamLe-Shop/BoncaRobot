@@ -1,4 +1,3 @@
-
 use config::Config;
 use hiirc::{Channel, ChannelUser, Irc, IrcWrite, Listener};
 use plugin_api::Context;
@@ -43,28 +42,6 @@ impl BoncaListener {
     pub fn leave(&self, channel: &str) {
         self.irc.as_ref().unwrap().part(channel, None).unwrap();
     }
-}
-
-#[derive(Clone)]
-pub struct SyncBoncaListener(Arc<Mutex<BoncaListener>>);
-
-impl SyncBoncaListener {
-    pub fn new(config: Arc<Mutex<Config>>) -> Self {
-        SyncBoncaListener(Arc::new(Mutex::new(BoncaListener::new(config))))
-    }
-    pub(crate) fn lock(&self) -> MutexGuard<BoncaListener> {
-        self.0.lock().unwrap()
-    }
-}
-
-impl Listener for SyncBoncaListener {
-    fn welcome(&mut self, irc: Arc<Irc>) {
-        let mut lis = self.0.lock().unwrap();
-        lis.irc = Some(irc.clone());
-        for c in &lis.config.lock().unwrap().bot.channels {
-            irc.join(c, None).unwrap();
-        }
-    }
     fn channel_msg(
         &mut self,
         irc: Arc<Irc>,
@@ -73,13 +50,12 @@ impl Listener for SyncBoncaListener {
         message: &str,
     ) {
         use std::fmt::Write;
-        let mut lis = self.0.lock().unwrap();
-        let prefix = lis.config.lock().unwrap().bot.cmd_prefix.clone();
+        let prefix = self.config.lock().unwrap().bot.cmd_prefix.clone();
         let help_string = format!("{}help", prefix.clone());
 
         if message.starts_with(&help_string) {
             if let Some(arg) = message[help_string.len()..].split_whitespace().next() {
-                for plugin in lis.plugins.values() {
+                for plugin in self.plugins.values() {
                     for cmd in &plugin.meta.commands {
                         if cmd.name == arg {
                             let _ = irc.privmsg(
@@ -97,7 +73,7 @@ impl Listener for SyncBoncaListener {
                 "The following commands are available ({} <command>): ",
                 &help_string
             );
-            for plugin in lis.plugins.values() {
+            for plugin in self.plugins.values() {
                 for cmd in &plugin.meta.commands {
                     let _ = write!(&mut msg, "{}, ", cmd.name);
                 }
@@ -106,7 +82,7 @@ impl Listener for SyncBoncaListener {
             return;
         }
 
-        for plugin in lis.plugins.values_mut() {
+        for plugin in self.plugins.values_mut() {
             std::thread::spawn({
                 let plugin = plugin.plugin.clone();
                 let message = message.to_owned();
@@ -141,5 +117,36 @@ impl Listener for SyncBoncaListener {
                 }
             }
         }
+    }
+}
+
+#[derive(Clone)]
+pub struct SyncBoncaListener(Arc<Mutex<BoncaListener>>);
+
+impl SyncBoncaListener {
+    pub fn new(config: Arc<Mutex<Config>>) -> Self {
+        SyncBoncaListener(Arc::new(Mutex::new(BoncaListener::new(config))))
+    }
+    pub(crate) fn lock(&self) -> MutexGuard<BoncaListener> {
+        self.0.lock().unwrap()
+    }
+}
+
+impl Listener for SyncBoncaListener {
+    fn welcome(&mut self, irc: Arc<Irc>) {
+        let mut lis = self.0.lock().unwrap();
+        lis.irc = Some(irc.clone());
+        for c in &lis.config.lock().unwrap().bot.channels {
+            irc.join(c, None).unwrap();
+        }
+    }
+    fn channel_msg(
+        &mut self,
+        irc: Arc<Irc>,
+        channel: Arc<Channel>,
+        sender: Arc<ChannelUser>,
+        message: &str,
+    ) {
+        self.lock().channel_msg(irc, channel, sender, message);
     }
 }

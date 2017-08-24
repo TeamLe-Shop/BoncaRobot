@@ -1,4 +1,3 @@
-
 use config::{self, Config};
 use listener::BoncaListener;
 use plugin_hosting::{load_plugin, reload_plugin};
