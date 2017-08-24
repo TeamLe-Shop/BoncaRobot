@@ -8,7 +8,7 @@ use std::sync::{Arc, Mutex};
 pub struct PluginContainer {
     pub plugin: ManuallyDrop<Arc<Mutex<Plugin>>>,
     pub meta: ManuallyDrop<PluginMeta>,
-    pub lib: ManuallyDrop<Library>,
+    lib: ManuallyDrop<Library>,
 }
 
 impl Drop for PluginContainer {
