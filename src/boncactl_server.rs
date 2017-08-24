@@ -1,6 +1,6 @@
 use config::{self, Config};
 use listener::BoncaListener;
-use plugin_hosting::{load_plugin, reload_plugin};
+use plugin_hosting::load_plugin;
 use zmq::Socket;
 
 pub(crate) fn handle_command(
@@ -51,7 +51,7 @@ pub(crate) fn handle_command(
             None => writeln!(&mut reply, "Don't forget the name!").unwrap(),
         },
         "reload" => match words.next() {
-            Some(name) => match reload_plugin(name, &mut lis.plugins) {
+            Some(name) => match lis.reload_plugin(name) {
                 Ok(()) => {
                     writeln!(&mut reply, "Reloaded plugin {}", name).unwrap();
                     for channel in lis.irc.as_ref().unwrap().channels() {

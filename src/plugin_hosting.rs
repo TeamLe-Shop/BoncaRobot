@@ -1,6 +1,5 @@
 use libloading::Library;
 use plugin_api::{Plugin, PluginMeta};
-use std::collections::HashMap;
 use std::error::Error;
 use std::mem::ManuallyDrop;
 use std::sync::{Arc, Mutex};
@@ -22,16 +21,6 @@ impl Drop for PluginContainer {
             ManuallyDrop::drop(&mut self.lib);
         }
     }
-}
-
-pub fn reload_plugin(
-    name: &str,
-    plugins: &mut HashMap<String, PluginContainer>,
-) -> Result<(), Box<Error>> {
-    plugins.remove(name);
-    let plugin = load_plugin(name)?;
-    plugins.insert(name.into(), plugin);
-    Ok(())
 }
 
 pub fn load_plugin(name: &str) -> Result<PluginContainer, Box<Error>> {

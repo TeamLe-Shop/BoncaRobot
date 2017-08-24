@@ -4,6 +4,7 @@ use plugin_api::Context;
 use plugin_hosting::{load_plugin, PluginContainer};
 use std;
 use std::collections::HashMap;
+use std::error::Error;
 use std::sync::{Arc, Mutex, MutexGuard};
 
 pub(crate) struct BoncaListener {
@@ -117,6 +118,12 @@ impl BoncaListener {
                 }
             }
         }
+    }
+    pub fn reload_plugin(&mut self, name: &str) -> Result<(), Box<Error>> {
+        self.plugins.remove(name);
+        let plugin = load_plugin(name)?;
+        self.plugins.insert(name.into(), plugin);
+        Ok(())
     }
 }
 
