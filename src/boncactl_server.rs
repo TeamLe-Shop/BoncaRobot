@@ -1,5 +1,7 @@
-use {load_plugin, reload_plugin, BoncaListener};
+
 use config::{self, Config};
+use listener::BoncaListener;
+use plugin_hosting::{load_plugin, reload_plugin};
 use zmq::Socket;
 
 pub(crate) fn handle_command(

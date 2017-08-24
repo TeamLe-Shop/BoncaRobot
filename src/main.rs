@@ -10,71 +10,11 @@ extern crate zmq;
 mod config;
 mod boncactl_server;
 mod listener;
+mod plugin_hosting;
 
-use libloading::Library;
-use listener::{BoncaListener, SyncBoncaListener};
-use plugin_api::{Plugin, PluginMeta};
-use std::collections::HashMap;
-use std::error::Error;
-use std::mem::ManuallyDrop;
+use listener::SyncBoncaListener;
 use std::sync::{Arc, Mutex};
 use std::thread;
-
-struct PluginContainer {
-    plugin: ManuallyDrop<Arc<Mutex<Plugin>>>,
-    meta: ManuallyDrop<PluginMeta>,
-    lib: ManuallyDrop<Library>,
-}
-
-impl Drop for PluginContainer {
-    fn drop(&mut self) {
-        unsafe {
-            // First drop the plugin, as it depends on both meta and lib
-            ManuallyDrop::drop(&mut self.plugin);
-            // Drop meta, it depends on lib
-            ManuallyDrop::drop(&mut self.meta);
-            // Finally drop the lib
-            ManuallyDrop::drop(&mut self.lib);
-        }
-    }
-}
-
-fn reload_plugin(
-    name: &str,
-    plugins: &mut HashMap<String, PluginContainer>,
-) -> Result<(), Box<Error>> {
-    plugins.remove(name);
-    let plugin = load_plugin(name)?;
-    plugins.insert(name.into(), plugin);
-    Ok(())
-}
-
-fn load_plugin(name: &str) -> Result<PluginContainer, Box<Error>> {
-    use std::env::consts::{DLL_PREFIX, DLL_SUFFIX};
-    #[cfg(debug_assertions)]
-    let root = "target/debug";
-    #[cfg(not(debug_assertions))]
-    let root = "target/release";
-    let path = format!(
-        "{dir}/{prefix}{name}{suffix}",
-        dir = root,
-        prefix = DLL_PREFIX,
-        name = name,
-        suffix = DLL_SUFFIX
-    );
-    let lib = Library::new(path)?;
-    let plugin = {
-        let init = unsafe { lib.get::<fn() -> Arc<Mutex<Plugin>>>(b"init")? };
-        init()
-    };
-    let mut meta = PluginMeta::default();
-    plugin.lock().unwrap().register(&mut meta);
-    Ok(PluginContainer {
-        plugin: ManuallyDrop::new(plugin),
-        meta: ManuallyDrop::new(meta),
-        lib: ManuallyDrop::new(lib),
-    })
-}
 
 fn main() {
     // If the configuration file does not exist, try copying over the template.

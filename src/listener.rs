@@ -1,7 +1,8 @@
-use {load_plugin, PluginContainer};
+
 use config::Config;
 use hiirc::{Channel, ChannelUser, Irc, IrcWrite, Listener};
 use plugin_api::Context;
+use plugin_hosting::{load_plugin, PluginContainer};
 use std;
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex, MutexGuard};
