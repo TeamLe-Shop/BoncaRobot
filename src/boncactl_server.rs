@@ -1,6 +1,6 @@
 use config::{self, Config};
 use listener::BoncaListener;
-use plugin_hosting::load_plugin;
+use plugin_container::PluginContainer;
 use zmq::Socket;
 
 pub(crate) fn handle_command(
@@ -27,7 +27,7 @@ pub(crate) fn handle_command(
             None => writeln!(&mut reply, "Need channel, buddy.").unwrap(),
         },
         "load" => match words.next() {
-            Some(name) => match load_plugin(name) {
+            Some(name) => match PluginContainer::load(name) {
                 Ok(pc) => {
                     lis.plugins.insert(name.to_owned(), pc);
                     writeln!(&mut reply, "Loaded \"{}\" plugin.", name).unwrap();

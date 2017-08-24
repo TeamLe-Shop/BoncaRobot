@@ -10,7 +10,7 @@ extern crate zmq;
 mod config;
 mod boncactl_server;
 mod listener;
-mod plugin_hosting;
+mod plugin_container;
 
 use listener::SyncBoncaListener;
 use std::sync::{Arc, Mutex};

@@ -1,7 +1,7 @@
 use config::Config;
 use hiirc::{Channel, ChannelUser, Irc, IrcWrite, Listener};
 use plugin_api::Context;
-use plugin_hosting::{load_plugin, PluginContainer};
+use plugin_container::PluginContainer;
 use std;
 use std::collections::HashMap;
 use std::error::Error;
@@ -21,7 +21,7 @@ impl BoncaListener {
             let cfg = config.lock().unwrap();
 
             for k in cfg.plugins.keys() {
-                plugins.insert(k.clone(), load_plugin(k).unwrap());
+                plugins.insert(k.clone(), PluginContainer::load(k).unwrap());
             }
         }
 
@@ -121,7 +121,7 @@ impl BoncaListener {
     }
     pub fn reload_plugin(&mut self, name: &str) -> Result<(), Box<Error>> {
         self.plugins.remove(name);
-        let plugin = load_plugin(name)?;
+        let plugin = PluginContainer::load(name)?;
         self.plugins.insert(name.into(), plugin);
         Ok(())
     }
