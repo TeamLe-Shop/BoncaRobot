@@ -1,3 +1,9 @@
+//! Boncactl: Resident overlord @ ##newboston
+//!
+//! Boncactl is an IRC bot whose functionality is implemented through plugins.
+//!
+//! It can also be controlled locally through IPC using zeromq.
+
 extern crate hiirc;
 extern crate libloading;
 extern crate plugin_api;
@@ -8,7 +14,7 @@ extern crate toml;
 extern crate zmq;
 
 mod config;
-mod boncactl_server;
+mod ipc_control;
 mod core;
 mod plugin_container;
 
@@ -49,5 +55,5 @@ fn main() {
             .dispatch(core_clone)
             .unwrap_or_else(|e| panic!("Failed to dispatch: {:?}", e));
     });
-    boncactl_server::listen(core, &*config);
+    ipc_control::listen(core, &*config);
 }

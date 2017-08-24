@@ -1,9 +1,12 @@
+//! Implementation of IPC control.
+
 use config::{self, Config};
 use core::{Core, SharedCore};
 use std::{thread, time};
 use std::sync::Mutex;
 use zmq::{self, Socket};
 
+/// Listens for IPC messages and handle them.
 pub fn listen(core: SharedCore, config: &Mutex<Config>) {
     let zmq_ctx = zmq::Context::new();
     let sock = zmq_ctx.socket(zmq::SocketType::REP).unwrap();

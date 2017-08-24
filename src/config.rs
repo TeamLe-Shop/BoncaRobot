@@ -1,3 +1,5 @@
+//! Implementation of user configuration using TOML.
+
 use std::collections::HashMap;
 use std::error::Error;
 use std::io;
