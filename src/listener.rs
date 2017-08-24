@@ -7,7 +7,7 @@ use std::collections::HashMap;
 use std::sync::{Arc, Mutex, MutexGuard};
 
 pub(crate) struct BoncaListener {
-    pub config: Arc<Mutex<Config>>,
+    config: Arc<Mutex<Config>>,
     pub plugins: HashMap<String, PluginContainer>,
     pub irc: Option<Arc<Irc>>,
 }
