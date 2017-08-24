@@ -50,38 +50,8 @@ impl BoncaListener {
         sender: Arc<ChannelUser>,
         message: &str,
     ) {
-        use std::fmt::Write;
         let prefix = self.config.lock().unwrap().bot.cmd_prefix.clone();
-        let help_string = format!("{}help", prefix.clone());
-
-        if message.starts_with(&help_string) {
-            if let Some(arg) = message[help_string.len()..].split_whitespace().next() {
-                for plugin in self.plugins.values() {
-                    for cmd in &plugin.meta.commands {
-                        if cmd.name == arg {
-                            let _ = irc.privmsg(
-                                channel.name(),
-                                &format!("{}: {}", sender.nickname(), cmd.help),
-                            );
-                            return;
-                        }
-                    }
-                }
-            }
-            let mut msg = String::new();
-            let _ = write!(
-                &mut msg,
-                "The following commands are available ({} <command>): ",
-                &help_string
-            );
-            for plugin in self.plugins.values() {
-                for cmd in &plugin.meta.commands {
-                    let _ = write!(&mut msg, "{}, ", cmd.name);
-                }
-            }
-            let _ = irc.privmsg(channel.name(), &format!("{}: {}", sender.nickname(), msg));
-            return;
-        }
+        self.handle_help(&prefix, &irc, &channel, &sender, message);
 
         for plugin in self.plugins.values_mut() {
             std::thread::spawn({
@@ -117,6 +87,46 @@ impl BoncaListener {
                     });
                 }
             }
+        }
+    }
+    fn handle_help(
+        &mut self,
+        prefix: &str,
+        irc: &Irc,
+        channel: &Channel,
+        sender: &ChannelUser,
+        message: &str,
+    ) {
+        use std::fmt::Write;
+        let help_string = format!("{}help", prefix.clone());
+
+        if message.starts_with(&help_string) {
+            if let Some(arg) = message[help_string.len()..].split_whitespace().next() {
+                for plugin in self.plugins.values() {
+                    for cmd in &plugin.meta.commands {
+                        if cmd.name == arg {
+                            let _ = irc.privmsg(
+                                channel.name(),
+                                &format!("{}: {}", sender.nickname(), cmd.help),
+                            );
+                            return;
+                        }
+                    }
+                }
+            }
+            let mut msg = String::new();
+            let _ = write!(
+                &mut msg,
+                "The following commands are available ({} <command>): ",
+                &help_string
+            );
+            for plugin in self.plugins.values() {
+                for cmd in &plugin.meta.commands {
+                    let _ = write!(&mut msg, "{}, ", cmd.name);
+                }
+            }
+            let _ = irc.privmsg(channel.name(), &format!("{}: {}", sender.nickname(), msg));
+            return;
         }
     }
     pub fn reload_plugin(&mut self, name: &str) -> Result<(), Box<Error>> {
