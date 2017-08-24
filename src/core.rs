@@ -7,7 +7,13 @@ use std::collections::HashMap;
 use std::error::Error;
 use std::sync::{Arc, Mutex, MutexGuard};
 
-pub(crate) struct BoncaListener {
+/// The core of the bot.
+///
+/// All user-facing functionality is implemented through plugins.
+/// The core is responsible for handling the IRC events, and notifying the plugins about it.
+///
+/// It also allows IRC and plugin manipulation for "foreign" entities like boncarobot.
+pub(crate) struct Core {
     config: Arc<Mutex<Config>>,
     plugins: HashMap<String, PluginContainer>,
     pub irc_bridge: IrcBridge,
@@ -47,7 +53,7 @@ impl IrcBridge {
     }
 }
 
-impl BoncaListener {
+impl Core {
     pub fn new(config: Arc<Mutex<Config>>) -> Self {
         // Load plugins
         let mut plugins = HashMap::new();
@@ -59,7 +65,7 @@ impl BoncaListener {
             }
         }
 
-        BoncaListener {
+        Self {
             config: config,
             plugins: plugins,
             irc_bridge: IrcBridge::new(),
@@ -176,19 +182,22 @@ impl BoncaListener {
     }
 }
 
+/// Thread-safe wrapper around `Core` that allows it to be shared between
+/// the IRC dispatch loop, and external entities like boncarobot, which can be on
+/// different threads.
 #[derive(Clone)]
-pub struct SyncBoncaListener(Arc<Mutex<BoncaListener>>);
+pub struct SharedCore(Arc<Mutex<Core>>);
 
-impl SyncBoncaListener {
+impl SharedCore {
     pub fn new(config: Arc<Mutex<Config>>) -> Self {
-        SyncBoncaListener(Arc::new(Mutex::new(BoncaListener::new(config))))
+        SharedCore(Arc::new(Mutex::new(Core::new(config))))
     }
-    pub(crate) fn lock(&self) -> MutexGuard<BoncaListener> {
+    pub(crate) fn lock(&self) -> MutexGuard<Core> {
         self.0.lock().unwrap()
     }
 }
 
-impl Listener for SyncBoncaListener {
+impl Listener for SharedCore {
     fn welcome(&mut self, irc: Arc<Irc>) {
         let mut lis = self.0.lock().unwrap();
         lis.irc_bridge.init(irc.clone());

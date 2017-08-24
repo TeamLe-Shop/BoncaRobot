@@ -1,10 +1,10 @@
 use config::{self, Config};
-use listener::{BoncaListener, SyncBoncaListener};
+use core::{Core, SharedCore};
 use std::{thread, time};
 use std::sync::Mutex;
 use zmq::{self, Socket};
 
-pub fn listen(listener: SyncBoncaListener, config: &Mutex<Config>) {
+pub fn listen(listener: SharedCore, config: &Mutex<Config>) {
     let zmq_ctx = zmq::Context::new();
     let sock = zmq_ctx.socket(zmq::SocketType::REP).unwrap();
     sock.bind("ipc:///tmp/boncarobot.sock").unwrap();
@@ -29,7 +29,7 @@ pub fn listen(listener: SyncBoncaListener, config: &Mutex<Config>) {
 
 fn handle_command(
     command_str: &str,
-    lis: &mut BoncaListener,
+    lis: &mut Core,
     config: &mut Config,
     sock: &Socket,
     quit_requested: &mut bool,

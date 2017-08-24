@@ -9,10 +9,10 @@ extern crate zmq;
 
 mod config;
 mod boncactl_server;
-mod listener;
+mod core;
 mod plugin_container;
 
-use listener::SyncBoncaListener;
+use core::SharedCore;
 use std::sync::{Arc, Mutex};
 use std::thread;
 
@@ -41,7 +41,7 @@ fn main() {
     server.push_str(":6667");
     let config = Arc::new(Mutex::new(config));
 
-    let listener = SyncBoncaListener::new(config.clone());
+    let listener = SharedCore::new(config.clone());
     let listener_clone = listener.clone();
     thread::spawn(move || {
         let settings = hiirc::Settings::new(&server, &nick);
