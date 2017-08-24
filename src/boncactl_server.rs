@@ -1,9 +1,34 @@
 use config::{self, Config};
-use listener::BoncaListener;
+use listener::{BoncaListener, SyncBoncaListener};
 use plugin_container::PluginContainer;
-use zmq::Socket;
+use std::{thread, time};
+use std::sync::{Arc, Mutex};
+use zmq::{self, Socket};
 
-pub(crate) fn handle_command(
+pub fn listen(listener: SyncBoncaListener, config: Arc<Mutex<Config>>) {
+    let zmq_ctx = zmq::Context::new();
+    let sock = zmq_ctx.socket(zmq::SocketType::REP).unwrap();
+    sock.bind("ipc:///tmp/boncarobot.sock").unwrap();
+    let mut quit_requested = false;
+
+    while !quit_requested {
+        if let Ok(Ok(command_str)) = sock.recv_string(zmq::DONTWAIT) {
+            let mut lis = listener.lock();
+            let mut config = config.lock().unwrap();
+            handle_command(
+                &command_str,
+                &mut lis,
+                &mut config,
+                &sock,
+                &mut quit_requested,
+            );
+        }
+        // Don't overwork ourselves
+        thread::sleep(time::Duration::from_millis(250));
+    }
+}
+
+fn handle_command(
     command_str: &str,
     lis: &mut BoncaListener,
     config: &mut Config,

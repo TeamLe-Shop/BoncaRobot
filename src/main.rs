@@ -49,25 +49,5 @@ fn main() {
             .dispatch(listener_clone)
             .unwrap_or_else(|e| panic!("Failed to dispatch: {:?}", e));
     });
-
-    let zmq_ctx = zmq::Context::new();
-    let sock = zmq_ctx.socket(zmq::SocketType::REP).unwrap();
-    sock.bind("ipc:///tmp/boncarobot.sock").unwrap();
-    let mut quit_requested = false;
-
-    while !quit_requested {
-        if let Ok(Ok(command_str)) = sock.recv_string(zmq::DONTWAIT) {
-            let mut lis = listener.lock();
-            let mut config = config.lock().unwrap();
-            boncactl_server::handle_command(
-                &command_str,
-                &mut lis,
-                &mut config,
-                &sock,
-                &mut quit_requested,
-            );
-        }
-        // Don't overwork ourselves
-        thread::sleep(std::time::Duration::from_millis(250));
-    }
+    boncactl_server::listen(listener, config);
 }
