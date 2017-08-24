@@ -10,7 +10,7 @@ use std::sync::{Arc, Mutex, MutexGuard};
 pub(crate) struct BoncaListener {
     config: Arc<Mutex<Config>>,
     pub plugins: HashMap<String, PluginContainer>,
-    pub irc: Option<Arc<Irc>>,
+    irc: Option<Arc<Irc>>,
 }
 
 impl BoncaListener {
@@ -36,6 +36,11 @@ impl BoncaListener {
     }
     pub fn msg(&self, target: &str, text: &str) {
         self.irc.as_ref().unwrap().privmsg(target, text).unwrap();
+    }
+    pub fn msg_all_joined_channels(&self, text: &str) {
+        for channel in self.irc.as_ref().unwrap().channels() {
+            self.msg(channel.name(), text);
+        }
     }
     pub fn join(&self, channel: &str) {
         self.irc.as_ref().unwrap().join(channel, None).unwrap();
