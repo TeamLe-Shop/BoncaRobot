@@ -9,7 +9,7 @@ use std::sync::{Arc, Mutex, MutexGuard};
 
 pub(crate) struct BoncaListener {
     config: Arc<Mutex<Config>>,
-    pub plugins: HashMap<String, PluginContainer>,
+    plugins: HashMap<String, PluginContainer>,
     irc: Option<Arc<Irc>>,
 }
 
@@ -142,6 +142,14 @@ impl BoncaListener {
                 }
             }
         }
+    }
+    pub fn load_plugin(&mut self, name: &str) -> Result<(), Box<Error>> {
+        let pc = PluginContainer::load(name)?;
+        self.plugins.insert(name.to_owned(), pc);
+        Ok(())
+    }
+    pub fn unload_plugin(&mut self, name: &str) -> bool {
+        self.plugins.remove(name).is_some()
     }
     pub fn reload_plugin(&mut self, name: &str) -> Result<(), Box<Error>> {
         self.plugins.remove(name);

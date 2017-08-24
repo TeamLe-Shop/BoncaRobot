@@ -1,6 +1,5 @@
 use config::{self, Config};
 use listener::{BoncaListener, SyncBoncaListener};
-use plugin_container::PluginContainer;
 use std::{thread, time};
 use std::sync::Mutex;
 use zmq::{self, Socket};
@@ -52,9 +51,8 @@ fn handle_command(
             None => writeln!(&mut reply, "Need channel, buddy.").unwrap(),
         },
         "load" => match words.next() {
-            Some(name) => match PluginContainer::load(name) {
-                Ok(pc) => {
-                    lis.plugins.insert(name.to_owned(), pc);
+            Some(name) => match lis.load_plugin(name) {
+                Ok(()) => {
                     writeln!(&mut reply, "Loaded \"{}\" plugin.", name).unwrap();
                     lis.msg_all_joined_channels(&format!("[Plugin '{}' was loaded]", name));
                 }
@@ -65,7 +63,7 @@ fn handle_command(
             None => writeln!(&mut reply, "Name, please!").unwrap(),
         },
         "unload" => match words.next() {
-            Some(name) => if lis.plugins.remove(name).is_some() {
+            Some(name) => if lis.unload_plugin(name) {
                 writeln!(&mut reply, "Removed \"{}\" plugin.", name).unwrap();
                 lis.msg_all_joined_channels(&format!("[Plugin '{}' was unloaded]", name));
             },
