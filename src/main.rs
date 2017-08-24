@@ -8,7 +8,9 @@ extern crate toml;
 extern crate zmq;
 
 mod config;
+mod boncactl_server;
 
+use config::Config;
 use hiirc::IrcWrite;
 use libloading::Library;
 use plugin_api::{Context, Plugin, PluginMeta};
@@ -75,13 +77,13 @@ fn load_plugin(name: &str) -> Result<PluginContainer, Box<Error>> {
 }
 
 struct BoncaListener {
-    config: Arc<Mutex<config::Config>>,
+    config: Arc<Mutex<Config>>,
     plugins: HashMap<String, PluginContainer>,
     irc: Option<Arc<hiirc::Irc>>,
 }
 
 impl BoncaListener {
-    pub fn new(config: Arc<Mutex<config::Config>>) -> Self {
+    pub fn new(config: Arc<Mutex<Config>>) -> Self {
         // Load plugins
         let mut plugins = HashMap::new();
         {
@@ -116,7 +118,7 @@ impl BoncaListener {
 struct SyncBoncaListener(Arc<Mutex<BoncaListener>>);
 
 impl SyncBoncaListener {
-    pub fn new(config: Arc<Mutex<config::Config>>) -> Self {
+    pub fn new(config: Arc<Mutex<Config>>) -> Self {
         SyncBoncaListener(Arc::new(Mutex::new(BoncaListener::new(config))))
     }
 }
@@ -249,79 +251,15 @@ fn main() {
 
     while !quit_requested {
         if let Ok(Ok(command_str)) = sock.recv_string(zmq::DONTWAIT) {
-            use std::fmt::Write;
-
-            let mut words = command_str.split(' ');
-            let mut reply = String::new();
             let mut lis = listener.0.lock().unwrap();
-            match words.next().unwrap() {
-                "quit" => {
-                    lis.request_quit(words.next());
-                    quit_requested = true;
-                }
-                "say" => match words.next() {
-                    Some(channel) => {
-                        let msg = words.collect::<Vec<_>>().join(" ");
-                        lis.msg(channel, &msg);
-                    }
-                    None => writeln!(&mut reply, "Need channel, buddy.").unwrap(),
-                },
-                "load" => match words.next() {
-                    Some(name) => match load_plugin(name) {
-                        Ok(pc) => {
-                            lis.plugins.insert(name.to_owned(), pc);
-                            writeln!(&mut reply, "Loaded \"{}\" plugin.", name).unwrap();
-                            for channel in lis.irc.as_ref().unwrap().channels() {
-                                lis.msg(channel.name(), &format!("[Plugin '{}' was loaded]", name));
-                            }
-                        }
-                        Err(e) => {
-                            writeln!(&mut reply, "Failed to load \"{}\": {}", name, e).unwrap();
-                        }
-                    },
-                    None => writeln!(&mut reply, "Name, please!").unwrap(),
-                },
-                "unload" => match words.next() {
-                    Some(name) => if lis.plugins.remove(name).is_some() {
-                        writeln!(&mut reply, "Removed \"{}\" plugin.", name).unwrap();
-                        for channel in lis.irc.as_ref().unwrap().channels() {
-                            lis.msg(channel.name(), &format!("[Plugin '{}' was unloaded]", name));
-                        }
-                    },
-                    None => writeln!(&mut reply, "Don't forget the name!").unwrap(),
-                },
-                "reload" => match words.next() {
-                    Some(name) => match reload_plugin(name, &mut lis.plugins) {
-                        Ok(()) => {
-                            writeln!(&mut reply, "Reloaded plugin {}", name).unwrap();
-                            for channel in lis.irc.as_ref().unwrap().channels() {
-                                lis.msg(
-                                    channel.name(),
-                                    &format!("[Plugin '{}' was reloaded]", name),
-                                );
-                            }
-                        }
-                        Err(e) => {
-                            writeln!(&mut reply, "Failed to reload plugin {}: {}", name, e).unwrap()
-                        }
-                    },
-                    None => writeln!(&mut reply, "Need a name, faggot").unwrap(),
-                },
-                "reload-cfg" => match config::load() {
-                    Ok(cfg) => *config.lock().unwrap() = cfg,
-                    Err(e) => writeln!(&mut reply, "{}", e).unwrap(),
-                },
-                "join" => match words.next() {
-                    Some(name) => lis.join(name),
-                    None => writeln!(&mut reply, "Need a channel name to join").unwrap(),
-                },
-                "leave" => match words.next() {
-                    Some(name) => lis.leave(name),
-                    None => writeln!(&mut reply, "Need a channel name to leave").unwrap(),
-                },
-                _ => writeln!(&mut reply, "Unknown command, bro.").unwrap(),
-            }
-            sock.send(reply.as_bytes(), 0).unwrap();
+            let mut config = config.lock().unwrap();
+            boncactl_server::handle_command(
+                &command_str,
+                &mut lis,
+                &mut config,
+                &sock,
+                &mut quit_requested,
+            );
         }
         // Don't overwork ourselves
         thread::sleep(std::time::Duration::from_millis(250));
