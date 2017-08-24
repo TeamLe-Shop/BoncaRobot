@@ -52,42 +52,7 @@ impl BoncaListener {
     ) {
         let prefix = self.config.lock().unwrap().bot.cmd_prefix.clone();
         self.handle_help(&prefix, &irc, &channel, &sender, message);
-
-        for plugin in self.plugins.values_mut() {
-            std::thread::spawn({
-                let plugin = plugin.plugin.clone();
-                let message = message.to_owned();
-                let irc = irc.clone();
-                let channel = channel.clone();
-                let sender = sender.clone();
-                move || {
-                    plugin
-                        .lock()
-                        .unwrap()
-                        .channel_msg(&message, Context::new(&irc, &channel, &sender));
-                }
-            });
-            for cmd in &plugin.meta.commands {
-                let cmd_string = format!("{}{}", prefix, cmd.name);
-                if message.starts_with(&cmd_string) {
-                    std::thread::spawn({
-                        let plugin = plugin.plugin.clone();
-                        let irc = irc.clone();
-                        let channel = channel.clone();
-                        let sender = sender.clone();
-                        let arg = message[cmd_string.len()..].trim_left().to_owned();
-                        let fun = cmd.fun;
-                        move || {
-                            fun(
-                                &mut *plugin.lock().unwrap(),
-                                &arg,
-                                Context::new(&irc, &channel, &sender),
-                            );
-                        }
-                    });
-                }
-            }
-        }
+        self.delegate_to_plugins(&prefix, irc, channel, sender, message);
     }
     fn handle_help(
         &mut self,
@@ -127,6 +92,50 @@ impl BoncaListener {
             }
             let _ = irc.privmsg(channel.name(), &format!("{}: {}", sender.nickname(), msg));
             return;
+        }
+    }
+    fn delegate_to_plugins(
+        &mut self,
+        prefix: &str,
+        irc: Arc<Irc>,
+        channel: Arc<Channel>,
+        sender: Arc<ChannelUser>,
+        message: &str,
+    ) {
+        for plugin in self.plugins.values_mut() {
+            std::thread::spawn({
+                let plugin = plugin.plugin.clone();
+                let message = message.to_owned();
+                let irc = irc.clone();
+                let channel = channel.clone();
+                let sender = sender.clone();
+                move || {
+                    plugin
+                        .lock()
+                        .unwrap()
+                        .channel_msg(&message, Context::new(&irc, &channel, &sender));
+                }
+            });
+            for cmd in &plugin.meta.commands {
+                let cmd_string = format!("{}{}", prefix, cmd.name);
+                if message.starts_with(&cmd_string) {
+                    std::thread::spawn({
+                        let plugin = plugin.plugin.clone();
+                        let irc = irc.clone();
+                        let channel = channel.clone();
+                        let sender = sender.clone();
+                        let arg = message[cmd_string.len()..].trim_left().to_owned();
+                        let fun = cmd.fun;
+                        move || {
+                            fun(
+                                &mut *plugin.lock().unwrap(),
+                                &arg,
+                                Context::new(&irc, &channel, &sender),
+                            );
+                        }
+                    });
+                }
+            }
         }
     }
     pub fn reload_plugin(&mut self, name: &str) -> Result<(), Box<Error>> {
