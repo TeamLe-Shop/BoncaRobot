@@ -321,7 +321,7 @@ fn main() {
                 },
                 _ => writeln!(&mut reply, "Unknown command, bro.").unwrap(),
             }
-            sock.send(&reply, 0).unwrap();
+            sock.send(reply.as_bytes(), 0).unwrap();
         }
         // Don't overwork ourselves
         thread::sleep(std::time::Duration::from_millis(250));

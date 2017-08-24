@@ -14,7 +14,7 @@ fn main() {
         loop {
             match editor.readline("> ") {
                 Ok(line) => {
-                    sock.send(&line, 0).unwrap();
+                    sock.send(line.as_bytes(), 0).unwrap();
                     let reply = sock.recv_string(0).unwrap().unwrap();
                     println!("{}", reply);
                     editor.add_history_entry(&line);
@@ -29,7 +29,7 @@ fn main() {
             }
         }
     } else {
-        sock.send(&command_str, 0).unwrap();
+        sock.send(command_str.as_bytes(), 0).unwrap();
         let reply = sock.recv_string(0).unwrap().unwrap();
         println!("{}", reply);
     }
