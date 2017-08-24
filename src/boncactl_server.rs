@@ -2,10 +2,10 @@ use config::{self, Config};
 use listener::{BoncaListener, SyncBoncaListener};
 use plugin_container::PluginContainer;
 use std::{thread, time};
-use std::sync::{Arc, Mutex};
+use std::sync::Mutex;
 use zmq::{self, Socket};
 
-pub fn listen(listener: SyncBoncaListener, config: Arc<Mutex<Config>>) {
+pub fn listen(listener: SyncBoncaListener, config: &Mutex<Config>) {
     let zmq_ctx = zmq::Context::new();
     let sock = zmq_ctx.socket(zmq::SocketType::REP).unwrap();
     sock.bind("ipc:///tmp/boncarobot.sock").unwrap();

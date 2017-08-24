@@ -49,5 +49,5 @@ fn main() {
             .dispatch(listener_clone)
             .unwrap_or_else(|e| panic!("Failed to dispatch: {:?}", e));
     });
-    boncactl_server::listen(listener, config);
+    boncactl_server::listen(listener, &*config);
 }
