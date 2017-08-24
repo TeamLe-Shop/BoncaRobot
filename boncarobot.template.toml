@@ -23,3 +23,4 @@ command-prefix = ""
 [plugins.searchfix]
 [plugins.isolang]
 [plugins.ud]
+[plugins.w]
