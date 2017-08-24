@@ -199,9 +199,9 @@ impl SharedCore {
 
 impl Listener for SharedCore {
     fn welcome(&mut self, irc: Arc<Irc>) {
-        let mut lis = self.0.lock().unwrap();
-        lis.irc_bridge.init(irc.clone());
-        for c in &lis.config.lock().unwrap().bot.channels {
+        let mut core = self.0.lock().unwrap();
+        core.irc_bridge.init(irc.clone());
+        for c in &core.config.lock().unwrap().bot.channels {
             irc.join(c, None).unwrap();
         }
     }

@@ -4,7 +4,7 @@ use std::{thread, time};
 use std::sync::Mutex;
 use zmq::{self, Socket};
 
-pub fn listen(listener: SharedCore, config: &Mutex<Config>) {
+pub fn listen(core: SharedCore, config: &Mutex<Config>) {
     let zmq_ctx = zmq::Context::new();
     let sock = zmq_ctx.socket(zmq::SocketType::REP).unwrap();
     sock.bind("ipc:///tmp/boncarobot.sock").unwrap();
@@ -12,11 +12,11 @@ pub fn listen(listener: SharedCore, config: &Mutex<Config>) {
 
     while !quit_requested {
         if let Ok(Ok(command_str)) = sock.recv_string(zmq::DONTWAIT) {
-            let mut lis = listener.lock();
+            let mut core = core.lock();
             let mut config = config.lock().unwrap();
             handle_command(
                 &command_str,
-                &mut lis,
+                &mut core,
                 &mut config,
                 &sock,
                 &mut quit_requested,
@@ -29,7 +29,7 @@ pub fn listen(listener: SharedCore, config: &Mutex<Config>) {
 
 fn handle_command(
     command_str: &str,
-    lis: &mut Core,
+    core: &mut Core,
     config: &mut Config,
     sock: &Socket,
     quit_requested: &mut bool,
@@ -40,21 +40,21 @@ fn handle_command(
     let mut reply = String::new();
     match words.next().unwrap() {
         "quit" => {
-            lis.irc_bridge.request_quit(words.next());
+            core.irc_bridge.request_quit(words.next());
             *quit_requested = true;
         }
         "say" => match words.next() {
             Some(channel) => {
                 let msg = words.collect::<Vec<_>>().join(" ");
-                lis.irc_bridge.msg(channel, &msg);
+                core.irc_bridge.msg(channel, &msg);
             }
             None => writeln!(&mut reply, "Need channel, buddy.").unwrap(),
         },
         "load" => match words.next() {
-            Some(name) => match lis.load_plugin(name) {
+            Some(name) => match core.load_plugin(name) {
                 Ok(()) => {
                     writeln!(&mut reply, "Loaded \"{}\" plugin.", name).unwrap();
-                    lis.irc_bridge
+                    core.irc_bridge
                         .msg_all_joined_channels(&format!("[Plugin '{}' was loaded]", name));
                 }
                 Err(e) => {
@@ -64,18 +64,18 @@ fn handle_command(
             None => writeln!(&mut reply, "Name, please!").unwrap(),
         },
         "unload" => match words.next() {
-            Some(name) => if lis.unload_plugin(name) {
+            Some(name) => if core.unload_plugin(name) {
                 writeln!(&mut reply, "Removed \"{}\" plugin.", name).unwrap();
-                lis.irc_bridge
+                core.irc_bridge
                     .msg_all_joined_channels(&format!("[Plugin '{}' was unloaded]", name));
             },
             None => writeln!(&mut reply, "Don't forget the name!").unwrap(),
         },
         "reload" => match words.next() {
-            Some(name) => match lis.reload_plugin(name) {
+            Some(name) => match core.reload_plugin(name) {
                 Ok(()) => {
                     writeln!(&mut reply, "Reloaded plugin {}", name).unwrap();
-                    lis.irc_bridge
+                    core.irc_bridge
                         .msg_all_joined_channels(&format!("[Plugin '{}' was reloaded]", name));
                 }
                 Err(e) => writeln!(&mut reply, "Failed to reload plugin {}: {}", name, e).unwrap(),
@@ -87,11 +87,11 @@ fn handle_command(
             Err(e) => writeln!(&mut reply, "{}", e).unwrap(),
         },
         "join" => match words.next() {
-            Some(name) => lis.irc_bridge.join(name),
+            Some(name) => core.irc_bridge.join(name),
             None => writeln!(&mut reply, "Need a channel name to join").unwrap(),
         },
         "leave" => match words.next() {
-            Some(name) => lis.irc_bridge.leave(name),
+            Some(name) => core.irc_bridge.leave(name),
             None => writeln!(&mut reply, "Need a channel name to leave").unwrap(),
         },
         _ => writeln!(&mut reply, "Unknown command, bro.").unwrap(),

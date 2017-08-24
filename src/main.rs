@@ -41,13 +41,13 @@ fn main() {
     server.push_str(":6667");
     let config = Arc::new(Mutex::new(config));
 
-    let listener = SharedCore::new(config.clone());
-    let listener_clone = listener.clone();
+    let core = SharedCore::new(config.clone());
+    let core_clone = core.clone();
     thread::spawn(move || {
         let settings = hiirc::Settings::new(&server, &nick);
         settings
-            .dispatch(listener_clone)
+            .dispatch(core_clone)
             .unwrap_or_else(|e| panic!("Failed to dispatch: {:?}", e));
     });
-    boncactl_server::listen(listener, &*config);
+    boncactl_server::listen(core, &*config);
 }
