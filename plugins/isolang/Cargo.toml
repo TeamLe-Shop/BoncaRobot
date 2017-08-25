@@ -5,6 +5,7 @@ authors = ["Mika Attila <radiantstatue@gmail.com>"]
 
 [dependencies.boncarobot]
 path = "../.."
+default-features = false
 
 [dependencies]
 csv = "0.15"

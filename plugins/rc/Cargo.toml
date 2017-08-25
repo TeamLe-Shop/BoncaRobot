@@ -8,6 +8,7 @@ librc = { git = "https://github.com/crumblingstatue/rc.git" }
 
 [dependencies.boncarobot]
 path = "../.."
+default-features = false
 
 [lib]
 name = "rc"
