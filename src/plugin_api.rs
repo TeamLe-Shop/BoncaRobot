@@ -7,12 +7,15 @@ extern crate downcast_rs;
 pub extern crate hiirc;
 
 use downcast_rs::Downcast;
+use util::SplitChunks;
 
 /// The most commonly used types when implementing a plugin.
 pub mod prelude {
     pub use super::{Context, Plugin, PluginMeta};
     pub use hiirc::IrcWrite;
 }
+
+mod util;
 
 use prelude::*;
 
@@ -42,7 +45,15 @@ impl<'a> Context<'a> {
     }
     /// Send a message to the channel belonging to this context.
     pub fn send_channel(&self, msg: &str) {
-        let _ = self.irc.privmsg(self.channel.name(), msg);
+        // Even though IRC protocol message length limit is 512,
+        // freenode seems to cut off messages starting after about 400 characters.
+        for chunk in SplitChunks::new(msg, 400) {
+            let chunk = chunk.trim();
+            if !chunk.is_empty() {
+                let _ = self.irc.privmsg(self.channel.name(), chunk);
+            }
+            std::thread::sleep(std::time::Duration::from_millis(500));
+        }
     }
 }
 

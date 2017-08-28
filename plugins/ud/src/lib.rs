@@ -7,44 +7,6 @@ use plugin_api::prelude::*;
 use std::error::Error;
 use std::io::prelude::*;
 
-struct SplitChunks<'a> {
-    text: &'a str,
-    size: usize,
-}
-
-impl<'a> SplitChunks<'a> {
-    fn new(text: &'a str, size: usize) -> Self {
-        Self { text, size }
-    }
-}
-
-#[test]
-fn test_split_chunks() {
-    let text = "I am a cool guy lol";
-    let mut chunks = SplitChunks::new(text, 5);
-    assert_eq!(chunks.next(), Some("I am "));
-    assert_eq!(chunks.next(), Some("a coo"));
-    assert_eq!(chunks.next(), Some("l guy"));
-    assert_eq!(chunks.next(), Some(" lol"));
-    assert_eq!(chunks.next(), None);
-}
-
-impl<'a> Iterator for SplitChunks<'a> {
-    type Item = &'a str;
-    fn next(&mut self) -> Option<&'a str> {
-        let mut cursor = self.size;
-        while !self.text.is_char_boundary(cursor) {
-            cursor -= 1;
-        }
-        let chunk = &self.text[..cursor];
-        if chunk.is_empty() {
-            return None;
-        }
-        self.text = &self.text[cursor..];
-        Some(chunk)
-    }
-}
-
 pub fn query(query: &str) -> Result<String, Box<Error>> {
     let msg = format!("http://api.urbandictionary.com/v0/define?term={}", query);
 
@@ -84,10 +46,7 @@ impl UdPlugin {
                     }
                 };
                 for line in entry.lines() {
-                    // Spit out text in chunks of 400
-                    for chunk in SplitChunks::new(line, 400) {
-                        ctx.send_channel(chunk);
-                    }
+                    ctx.send_channel(line);
                 }
             }
             Err(e) => {
