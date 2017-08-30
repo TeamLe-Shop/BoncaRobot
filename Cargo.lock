@@ -420,6 +420,16 @@ version = "0.1.0"
 source = "git+https://github.com/crumblingstatue/rc.git#8209dfa3e3aed402baf170b472f0a65202ab7206"
 
 [[package]]
+name = "linktitle"
+version = "0.1.0"
+dependencies = [
+ "boncarobot 0.1.0",
+ "reqwest 0.7.3 (registry+https://github.com/rust-lang/crates.io-index)",
+ "scraper 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "url 1.5.1 (registry+https://github.com/rust-lang/crates.io-index)",
+]
+
+[[package]]
 name = "log"
 version = "0.3.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
