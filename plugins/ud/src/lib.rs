@@ -38,15 +38,22 @@ impl UdPlugin {
                         return;
                     }
                 };
-                let entry = match json["list"][0]["definition"].as_str() {
+                let mut entry = match json["list"][0]["definition"].as_str() {
                     Some(entry) => entry,
                     None => {
                         ctx.send_channel("ENGLISH, MOTHERFUCKER.");
                         return;
                     }
                 };
+                let too_large = entry.len() > 400;
+                if too_large {
+                    entry = &entry[..400];
+                }
                 for line in entry.lines() {
                     ctx.send_channel(line);
+                }
+                if too_large {
+                    ctx.send_channel(&format!("http://www.urbandictionary.com/define.php?term={}", arg));
                 }
             }
             Err(e) => {
