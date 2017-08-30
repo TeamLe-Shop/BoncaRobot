@@ -49,10 +49,13 @@ impl Plugin for LinkTitlePlugin {
         LinkTitlePlugin
     }
     fn channel_msg(&mut self, msg: &str, ctx: Context) {
-        let msg = msg.trim();
-        if msg.starts_with("http://") || msg.starts_with("https://") {
-            let title = get_title(msg);
-            ctx.send_channel(&title);
+        for word in msg.split_whitespace() {
+            if word.starts_with("http://") || word.starts_with("https://") {
+                let title = get_title(word);
+                ctx.send_channel(&title);
+                // Stop after first link
+                return;
+            }
         }
     }
 }
