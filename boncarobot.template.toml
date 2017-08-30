@@ -24,3 +24,4 @@ command-prefix = ""
 [plugins.isolang]
 [plugins.ud]
 [plugins.w]
+[plugins.linktitle]
