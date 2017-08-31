@@ -20,7 +20,6 @@ command-prefix = ""
 # GOOGURU
 [plugins.search]
 # Feex eet, white male.
-[plugins.searchfix]
 [plugins.isolang]
 [plugins.ud]
 [plugins.w]
