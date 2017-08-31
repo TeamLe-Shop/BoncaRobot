@@ -55,7 +55,7 @@ fn main() {
             .unwrap_or_else(|e| panic!("Failed to dispatch: {:?}", e));
     });
     #[cfg(feature = "ipc")]
-    ipc_control::listen(core, &*config);
+    ipc_control::listen(&core.0, &*config);
     #[cfg(not(feature = "ipc"))]
     {
         eprintln!("YOU SUCK!");

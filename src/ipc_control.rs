@@ -4,12 +4,12 @@ extern crate zmq;
 
 use self::zmq::Socket;
 use config::{self, Config};
-use core::{Core, SharedCore};
+use core::Core;
 use std::{thread, time};
 use std::sync::Mutex;
 
 /// Listens for IPC messages and handle them.
-pub fn listen(core: SharedCore, config: &Mutex<Config>) {
+pub(crate) fn listen(core: &Mutex<Core>, config: &Mutex<Config>) {
     let zmq_ctx = zmq::Context::new();
     let sock = zmq_ctx.socket(zmq::SocketType::REP).unwrap();
     sock.bind("ipc:///tmp/boncarobot.sock").unwrap();
@@ -17,7 +17,7 @@ pub fn listen(core: SharedCore, config: &Mutex<Config>) {
 
     while !quit_requested {
         if let Ok(Ok(command_str)) = sock.recv_string(zmq::DONTWAIT) {
-            let mut core = core.lock();
+            let mut core = core.lock().unwrap();
             let mut config = config.lock().unwrap();
             handle_command(
                 &command_str,

@@ -199,7 +199,7 @@ impl Core {
 /// the IRC dispatch loop, and external entities like boncarobot, which can be on
 /// different threads.
 #[derive(Clone)]
-pub struct SharedCore(Arc<Mutex<Core>>);
+pub struct SharedCore(pub(crate) Arc<Mutex<Core>>);
 
 impl SharedCore {
     pub fn new(config: Arc<Mutex<Config>>) -> Self {
