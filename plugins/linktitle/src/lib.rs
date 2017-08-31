@@ -2,7 +2,6 @@
 extern crate plugin_api;
 extern crate reqwest;
 extern crate scraper;
-extern crate url;
 
 use plugin_api::prelude::*;
 use std::error::Error;

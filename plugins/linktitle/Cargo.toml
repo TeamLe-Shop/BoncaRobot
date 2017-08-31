@@ -6,7 +6,6 @@ authors = ["Mika Attila <radiantstatue@gmail.com>"]
 [dependencies]
 reqwest = "0.7.1"
 scraper = "*"
-url = "*"
 
 [dependencies.boncarobot]
 path ="../../"
