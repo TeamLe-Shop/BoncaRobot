@@ -2,11 +2,11 @@
 
 extern crate zmq;
 
+use self::zmq::Socket;
 use config::{self, Config};
 use core::{Core, SharedCore};
 use std::{thread, time};
 use std::sync::Mutex;
-use self::zmq::Socket;
 
 /// Listens for IPC messages and handle them.
 pub fn listen(core: SharedCore, config: &Mutex<Config>) {
