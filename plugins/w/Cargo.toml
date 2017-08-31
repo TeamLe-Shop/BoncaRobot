@@ -12,7 +12,6 @@ path ="../../"
 default-features = false
 
 [lib]
-name = "w"
 crate-type = ["dylib"]
 # This is important, makes it so that the lib is compiled with
 # rustc -C prefer-dynamic, which is required for

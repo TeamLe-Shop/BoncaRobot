@@ -4,7 +4,6 @@ version = "0.1.0"
 authors = ["Mika Attila <radiantstatue@gmail.com>"]
 
 [lib]
-name = "shift"
 crate-type = ["dylib"]
 # This is important, makes it so that the lib is compiled with
 # rustc -C prefer-dynamic, which is required for
