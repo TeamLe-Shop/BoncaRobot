@@ -11,6 +11,7 @@ rustyline = "1.0.0"
 downcast-rs = "1.0.0"
 serde = "1.0.8"
 serde_derive = "1.0.8"
+scaproust = "0.3.1"
 
 [workspace]
 members = ["plugins/*"]
@@ -21,20 +22,3 @@ path = "src/plugin_api.rs"
 
 [profile.release]
 panic = "abort"
-
-[features]
-ipc = ["zmq"]
-default = ["ipc"]
-
-[dependencies.zmq]
-version = "0.8.2"
-optional = true
-
-[[bin]]
-name = "boncactl"
-required-features = ["ipc"]
-path = "src/bin/boncactl.rs"
-
-[[bin]]
-name = "boncarobot"
-path = "src/main.rs"

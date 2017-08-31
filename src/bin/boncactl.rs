@@ -1,21 +1,23 @@
 extern crate rustyline;
-extern crate zmq;
+extern crate scaproust;
 
 use rustyline::Editor;
 use rustyline::error::ReadlineError;
+use scaproust::{Ipc, SessionBuilder};
+use scaproust::proto::pair::Pair;
 
 fn main() {
-    let zmq_ctx = zmq::Context::new();
-    let sock = zmq_ctx.socket(zmq::SocketType::REQ).unwrap();
     let command_str = std::env::args().skip(1).collect::<Vec<_>>().join(" ");
-    sock.connect("ipc:///tmp/boncarobot.sock").unwrap();
+    let mut session = SessionBuilder::new().with("ipc", Ipc).build().unwrap();
+    let mut socket = session.create_socket::<Pair>().unwrap();
+    socket.connect("ipc:///tmp/boncarobot.sock").unwrap();
     if command_str.is_empty() {
         let mut editor = Editor::<()>::new();
         loop {
             match editor.readline("> ") {
                 Ok(line) => {
-                    sock.send(line.as_bytes(), 0).unwrap();
-                    let reply = sock.recv_string(0).unwrap().unwrap();
+                    socket.send(line.clone().into_bytes()).unwrap();
+                    let reply = String::from_utf8(socket.recv().unwrap()).unwrap();
                     println!("{}", reply);
                     editor.add_history_entry(&line);
                 }
@@ -29,8 +31,8 @@ fn main() {
             }
         }
     } else {
-        sock.send(command_str.as_bytes(), 0).unwrap();
-        let reply = sock.recv_string(0).unwrap().unwrap();
+        socket.send(command_str.into_bytes()).unwrap();
+        let reply = String::from_utf8(socket.recv().unwrap()).unwrap();
         println!("{}", reply);
     }
 }

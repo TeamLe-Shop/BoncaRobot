@@ -1,29 +1,29 @@
 //! Implementation of IPC control.
 
-extern crate zmq;
-
-use self::zmq::Socket;
 use config::{self, Config};
 use core::Core;
+use scaproust::{Ipc, SessionBuilder, Socket};
+use scaproust::proto::pair::Pair;
 use std::{thread, time};
 use std::sync::Mutex;
 
 /// Listens for IPC messages and handle them.
 pub(crate) fn listen(core: &Mutex<Core>, config: &Mutex<Config>) {
-    let zmq_ctx = zmq::Context::new();
-    let sock = zmq_ctx.socket(zmq::SocketType::REP).unwrap();
-    sock.bind("ipc:///tmp/boncarobot.sock").unwrap();
+    let mut session = SessionBuilder::new().with("ipc", Ipc).build().unwrap();
+    let mut socket = session.create_socket::<Pair>().unwrap();
+    socket.bind("ipc:///tmp/boncarobot.sock").unwrap();
+
     let mut quit_requested = false;
 
     while !quit_requested {
-        if let Ok(Ok(command_str)) = sock.recv_string(zmq::DONTWAIT) {
+        if let Ok(buffer) = socket.recv() {
             let mut core = core.lock().unwrap();
             let mut config = config.lock().unwrap();
             handle_command(
-                &command_str,
+                ::std::str::from_utf8(&buffer).unwrap(),
                 &mut core,
                 &mut config,
-                &sock,
+                &mut socket,
                 &mut quit_requested,
             );
         }
@@ -36,7 +36,7 @@ fn handle_command(
     command_str: &str,
     core: &mut Core,
     config: &mut Config,
-    sock: &Socket,
+    sock: &mut Socket,
     quit_requested: &mut bool,
 ) {
     use std::fmt::Write;
@@ -101,5 +101,5 @@ fn handle_command(
         },
         _ => writeln!(&mut reply, "Unknown command, bro.").unwrap(),
     }
-    sock.send(reply.as_bytes(), 0).unwrap();
+    sock.send(reply.into_bytes()).unwrap();
 }

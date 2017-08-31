@@ -7,12 +7,12 @@
 extern crate hiirc;
 extern crate libloading;
 extern crate plugin_api;
+extern crate scaproust;
 #[macro_use]
 extern crate serde_derive;
 extern crate toml;
 
 mod config;
-#[cfg(feature = "ipc")]
 mod ipc_control;
 mod core;
 mod plugin_container;
@@ -54,13 +54,5 @@ fn main() {
             .dispatch(core_clone)
             .unwrap_or_else(|e| panic!("Failed to dispatch: {:?}", e));
     });
-    #[cfg(feature = "ipc")]
     ipc_control::listen(&core.0, &*config);
-    #[cfg(not(feature = "ipc"))]
-    {
-        eprintln!("YOU SUCK!");
-        loop {
-            ::std::thread::sleep(::std::time::Duration::from_millis(100));
-        }
-    }
 }
