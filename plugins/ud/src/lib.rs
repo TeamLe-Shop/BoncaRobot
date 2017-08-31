@@ -55,7 +55,7 @@ impl UdPlugin {
                 if too_large {
                     ctx.send_channel(&format!(
                         "http://www.urbandictionary.com/define.php?term={}",
-                        arg
+                        arg.replace(' ', "%20").replace('&', "%26")
                     ));
                 }
             }
