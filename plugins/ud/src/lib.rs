@@ -53,7 +53,10 @@ impl UdPlugin {
                     ctx.send_channel(line);
                 }
                 if too_large {
-                    ctx.send_channel(&format!("http://www.urbandictionary.com/define.php?term={}", arg));
+                    ctx.send_channel(&format!(
+                        "http://www.urbandictionary.com/define.php?term={}",
+                        arg
+                    ));
                 }
             }
             Err(e) => {
