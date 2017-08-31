@@ -10,7 +10,13 @@ fn main() {
     let command_str = std::env::args().skip(1).collect::<Vec<_>>().join(" ");
     let mut session = SessionBuilder::new().with("ipc", Ipc).build().unwrap();
     let mut socket = session.create_socket::<Pair>().unwrap();
-    socket.connect("ipc:///tmp/boncarobot.sock").unwrap();
+    let tmpdir = std::env::temp_dir();
+    socket
+        .connect(&format!(
+            "ipc://{}/boncarobot.sock",
+            tmpdir.to_str().unwrap()
+        ))
+        .unwrap();
     if command_str.is_empty() {
         let mut editor = Editor::<()>::new();
         loop {

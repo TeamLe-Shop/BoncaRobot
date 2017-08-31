@@ -11,7 +11,13 @@ use std::sync::Mutex;
 pub(crate) fn listen(core: &Mutex<Core>, config: &Mutex<Config>) {
     let mut session = SessionBuilder::new().with("ipc", Ipc).build().unwrap();
     let mut socket = session.create_socket::<Pair>().unwrap();
-    socket.bind("ipc:///tmp/boncarobot.sock").unwrap();
+    let tmpdir = ::std::env::temp_dir();
+    socket
+        .bind(&format!(
+            "ipc://{}/boncarobot.sock",
+            tmpdir.to_str().unwrap()
+        ))
+        .unwrap();
 
     let mut quit_requested = false;
 
