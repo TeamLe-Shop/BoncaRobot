@@ -91,7 +91,7 @@ impl Core {
         message: &str,
     ) {
         use std::fmt::Write;
-        let help_string = format!("{}help", prefix.clone());
+        let help_string = format!("{}help", prefix);
 
         if message.starts_with(&help_string) {
             if let Some(arg) = message[help_string.len()..].split_whitespace().next() {
