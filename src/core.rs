@@ -132,10 +132,14 @@ impl Core {
         message: &str,
     ) {
         if message.starts_with(command_prefix) {
-            self.handle_command(irc, channel, sender, &message[command_prefix.len()..]);
-        } else {
-            self.delegate_non_command(irc, channel, sender, message);
+            self.handle_command(
+                irc.clone(),
+                channel.clone(),
+                sender.clone(),
+                &message[command_prefix.len()..],
+            );
         }
+        self.delegate_non_command(irc, channel, sender, message);
     }
     fn handle_command(
         &mut self,
