@@ -10,6 +10,7 @@ extern crate plugin_api;
 extern crate scaproust;
 #[macro_use]
 extern crate serde_derive;
+extern crate split_whitespace_rest;
 extern crate toml;
 
 mod config;

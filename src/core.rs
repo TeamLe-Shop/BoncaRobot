@@ -2,6 +2,7 @@ use config::Config;
 use hiirc::{Channel, ChannelUser, Irc, IrcWrite, Listener};
 use plugin_api::Context;
 use plugin_container::PluginContainer;
+use split_whitespace_rest::SplitWhitespace;
 use std;
 use std::collections::HashMap;
 use std::error::Error;
@@ -124,17 +125,66 @@ impl Core {
     }
     fn delegate_to_plugins(
         &mut self,
-        prefix: &str,
+        command_prefix: &str,
+        irc: Arc<Irc>,
+        channel: Arc<Channel>,
+        sender: Arc<ChannelUser>,
+        message: &str,
+    ) {
+        if message.starts_with(command_prefix) {
+            self.handle_command(irc, channel, sender, &message[command_prefix.len()..]);
+        } else {
+            self.delegate_non_command(irc, channel, sender, message);
+        }
+    }
+    fn handle_command(
+        &mut self,
+        irc: Arc<Irc>,
+        channel: Arc<Channel>,
+        sender: Arc<ChannelUser>,
+        command: &str,
+    ) {
+        let mut sw = SplitWhitespace::new(command);
+        let command = match sw.next() {
+            Some(command) => command,
+            None => return,
+        };
+        let arg = sw.rest_as_slice();
+        let mut match_found = false;
+        for plugin in self.plugins.values_mut() {
+            for cmd in &plugin.meta.commands {
+                if command == cmd.name {
+                    match_found = true;
+                    std::thread::spawn({
+                        let plugin = plugin.plugin.clone();
+                        let irc = irc.clone();
+                        let channel = channel.clone();
+                        let sender = sender.clone();
+                        let arg = arg.trim_left().to_owned();
+                        let fun = cmd.fun;
+                        move || {
+                            fun(
+                                &mut *plugin.lock().unwrap(),
+                                &arg,
+                                Context::new(&irc, &channel, &sender),
+                            );
+                        }
+                    });
+                }
+            }
+        }
+        if !match_found {
+            let _ = irc.privmsg(channel.name(), &format!("Unknown command: {}", command));
+        }
+    }
+    fn delegate_non_command(
+        &mut self,
         irc: Arc<Irc>,
         channel: Arc<Channel>,
         sender: Arc<ChannelUser>,
         message: &str,
     ) {
         for plugin in self.plugins.values_mut() {
-            // Delegation is done in two parts:
-
-            // 1: Pass the raw IRC message to the, and let it handle the message
-            // however it wants.
             std::thread::spawn({
                 let plugin = plugin.plugin.clone();
                 let message = message.to_owned();
@@ -148,35 +198,6 @@ impl Core {
                         .channel_msg(&message, Context::new(&irc, &channel, &sender));
                 }
             });
-
-            // 2: There is a separate mechanism for interacting with the bot.
-            // It's called "commands".
-            // Iterate through all the commands of the plugin, and if the message matches
-            // the command, execute it.
-            let command_root = match message.split_whitespace().next() {
-                Some(word) => word,
-                None => return,
-            };
-            for cmd in &plugin.meta.commands {
-                let cmd_string = format!("{}{}", prefix, cmd.name);
-                if command_root == cmd_string {
-                    std::thread::spawn({
-                        let plugin = plugin.plugin.clone();
-                        let irc = irc.clone();
-                        let channel = channel.clone();
-                        let sender = sender.clone();
-                        let arg = message[cmd_string.len()..].trim_left().to_owned();
-                        let fun = cmd.fun;
-                        move || {
-                            fun(
-                                &mut *plugin.lock().unwrap(),
-                                &arg,
-                                Context::new(&irc, &channel, &sender),
-                            );
-                        }
-                    });
-                }
-            }
         }
     }
     pub fn load_plugin(&mut self, name: &str) -> Result<(), Box<Error>> {

@@ -13,6 +13,9 @@ serde = "1.0.8"
 serde_derive = "1.0.8"
 scaproust = "0.3.1"
 
+[dependencies.split-whitespace-rest]
+git = "https://github.com/crumblingstatue/split-whitespace-rest"
+
 [workspace]
 members = ["plugins/*"]
 
