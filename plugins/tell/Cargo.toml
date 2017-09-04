@@ -1,0 +1,19 @@
+[package]
+name = "tell"
+version = "0.1.0"
+authors = ["Mika Attila <radiantstatue@gmail.com>"]
+
+[dependencies.boncarobot]
+path = "../.."
+default-features = false
+
+[dependencies.split-whitespace-rest]
+git = "https://github.com/crumblingstatue/split-whitespace-rest"
+
+[lib]
+crate-type = ["dylib"]
+# This is important, makes it so that the lib is compiled with
+# rustc -C prefer-dynamic, which is required for
+# things like freeing something in the host that was allocated
+# in the plugin
+plugin = true
