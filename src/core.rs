@@ -131,7 +131,7 @@ impl Core {
         sender: Arc<ChannelUser>,
         message: &str,
     ) {
-        if message.starts_with(command_prefix) {
+        if is_valid_command(message, command_prefix) {
             self.handle_command(
                 irc.clone(),
                 channel.clone(),
@@ -218,6 +218,18 @@ impl Core {
         self.plugins.insert(name.into(), plugin);
         Ok(())
     }
+}
+
+fn is_valid_command(message: &str, prefix: &str) -> bool {
+    // A valid command is `prefix` immediately succeeded by an alphabetic character
+    let ml = message.len();
+    let pl = prefix.len();
+    if ml > pl && &message[..pl] == prefix {
+        if let Some(ch) = message[pl..].chars().next() {
+            return ch.is_alphabetic();
+        }
+    }
+    false
 }
 
 /// Thread-safe wrapper around `Core` that allows it to be shared between
