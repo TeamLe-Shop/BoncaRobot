@@ -233,8 +233,7 @@ fn is_valid_command(message: &str, prefix: &str) -> bool {
 }
 
 /// Thread-safe wrapper around `Core` that allows it to be shared between
-/// the IRC dispatch loop, and external entities like boncarobot, which can be on
-/// different threads.
+/// the IRC dispatch loop and the IPC listener, which are on different threads.
 #[derive(Clone)]
 pub struct SharedCore(pub(crate) Arc<Mutex<Core>>);
 
