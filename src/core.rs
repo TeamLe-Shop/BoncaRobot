@@ -224,7 +224,7 @@ fn is_valid_command(message: &str, prefix: &str) -> bool {
     // A valid command is `prefix` immediately succeeded by an alphabetic character
     let ml = message.len();
     let pl = prefix.len();
-    if ml > pl && &message[..pl] == prefix {
+    if ml > pl && &message.as_bytes()[..pl] == prefix.as_bytes() {
         if let Some(ch) = message[pl..].chars().next() {
             return ch.is_alphabetic();
         }
