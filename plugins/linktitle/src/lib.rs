@@ -20,14 +20,16 @@ pub fn fetch_page(link: &str) -> Result<String, Box<Error>> {
 }
 
 
-fn find_title(body: &str) -> Result<String, Box<Error>> {
+fn find_title(body: &str) -> String {
     use scraper::{Html, Selector};
 
     let html = Html::parse_document(body);
     let sel = Selector::parse("title").unwrap();
     let mut titles = html.select(&sel);
-    let title = titles.next().ok_or("No title found")?;
-    Ok(title.text().collect())
+    match titles.next() {
+        Some(title) => title.text().collect(),
+        None => String::new(),
+    }
 }
 
 fn get_title(link: &str) -> String {
@@ -35,10 +37,7 @@ fn get_title(link: &str) -> String {
         Ok(page) => page,
         Err(e) => return format!("[error: {}]", e),
     };
-    match find_title(&page) {
-        Ok(title) => title,
-        Err(e) => format!("[error: {}", e),
-    }
+    find_title(&page)
 }
 
 struct LinkTitlePlugin;
@@ -51,7 +50,9 @@ impl Plugin for LinkTitlePlugin {
         for word in msg.split_whitespace() {
             if word.starts_with("http://") || word.starts_with("https://") {
                 let title = get_title(word);
-                ctx.send_channel(&title);
+                if !title.is_empty() {
+                    ctx.send_channel(&title);
+                }
                 // Stop after first link
                 return;
             }
