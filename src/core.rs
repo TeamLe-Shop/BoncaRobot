@@ -13,15 +13,14 @@ use std::sync::{Arc, Mutex, MutexGuard};
 /// All user-facing functionality is implemented through plugins.
 /// The core is responsible for handling the IRC events, and notifying the plugins about it.
 ///
-/// It also allows IRC and plugin manipulation for "foreign" entities like boncarobot.
+/// It can also be manipulated through IPC.
 pub(crate) struct Core {
     config: Arc<Mutex<Config>>,
     plugins: HashMap<String, PluginContainer>,
     pub irc_bridge: IrcBridge,
 }
 
-/// Allows foreign entities (e.g. boncarobot) to manipulate the IRC session
-/// (send messages/join/leave/quit/etc.).
+/// Allows IRC access (send messages/join/leave/quit/etc.) for IPC clients.
 pub(crate) struct IrcBridge {
     /// IRC handle. It has delayed initialization, but can be assumed to be always `Some` after
     /// the initialization.
