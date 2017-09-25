@@ -79,9 +79,12 @@ impl Core {
         message: &str,
     ) {
         let prefix = self.config.lock().unwrap().bot.cmd_prefix.clone();
-        self.handle_help(&prefix, &irc, &channel, &sender, message);
-        self.delegate_to_plugins(&prefix, irc, channel, sender, message);
+        if !self.handle_help(&prefix, &irc, &channel, &sender, message) {
+            self.delegate_to_plugins(&prefix, irc, channel, sender, message);
+        }
     }
+    /// Recognize and handle the help command. Returns whether the command we looked at was
+    /// the help command.
     fn handle_help(
         &mut self,
         prefix: &str,
@@ -89,7 +92,7 @@ impl Core {
         channel: &Channel,
         sender: &ChannelUser,
         message: &str,
-    ) {
+    ) -> bool {
         use std::fmt::Write;
         let help_string = format!("{}help", prefix);
 
@@ -102,7 +105,7 @@ impl Core {
                                 channel.name(),
                                 &format!("{}: {}", sender.nickname(), cmd.help),
                             );
-                            return;
+                            return true;
                         }
                     }
                 }
@@ -119,8 +122,9 @@ impl Core {
                 }
             }
             let _ = irc.privmsg(channel.name(), &format!("{}: {}", sender.nickname(), msg));
-            return;
+            return true;
         }
+        false
     }
     fn delegate_to_plugins(
         &mut self,
