@@ -10,7 +10,7 @@ channels = ["#boncarobot"]
 # Note that it's interpreted literally, so you need to manually put
 # a space if you want a space in the prefix.
 # e.g. the prefix "kek" would be used like "keksome-command"
-command-prefix = ""
+command-prefix = "."
 
 [plugins.shift]
 # Optional custom path. By default, it looks for `target/{debug or release}/libpluginname.so`.
