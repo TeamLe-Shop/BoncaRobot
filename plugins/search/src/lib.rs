@@ -26,8 +26,8 @@ const URLQ: &'static str = "/url?q=";
 
 fn parse_urlq(urlq: &str) -> Result<&str, Box<Error>> {
     let begin = URLQ.len();
-    let end = begin +
-        urlq[begin..]
+    let end = begin
+        + urlq[begin..]
             .find("&sa=")
             .ok_or("Expected &sa= shit, but didn't find it.")?;
     Ok(&urlq[begin..end])
