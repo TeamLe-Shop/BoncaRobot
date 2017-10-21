@@ -8,7 +8,10 @@ use std::error::Error;
 use std::io::prelude::*;
 
 pub fn query(query: &str) -> Result<String, Box<Error>> {
-    let msg = format!("http://api.urbandictionary.com/v0/define?term={}", query);
+    let msg = format!(
+        "http://api.urbandictionary.com/v0/define?term={}",
+        query.replace(' ', "%20").replace('&', "%26")
+    );
 
     let mut resp = reqwest::get(&msg)?;
 
