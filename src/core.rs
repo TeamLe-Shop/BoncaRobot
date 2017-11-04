@@ -192,18 +192,16 @@ impl Core {
         message: &str,
     ) {
         for plugin in self.plugins.values_mut() {
-            std::thread::spawn({
-                let plugin = plugin.plugin.clone();
-                let message = message.to_owned();
-                let irc = Arc::clone(&irc);
-                let channel = Arc::clone(&channel);
-                let sender = Arc::clone(&sender);
-                move || {
-                    plugin
-                        .lock()
-                        .unwrap()
-                        .channel_msg(&message, Context::new(&irc, &channel, &sender));
-                }
+            let plugin = plugin.plugin.clone();
+            let message = message.to_owned();
+            let irc = Arc::clone(&irc);
+            let channel = Arc::clone(&channel);
+            let sender = Arc::clone(&sender);
+            std::thread::spawn(move || {
+                plugin
+                    .lock()
+                    .unwrap()
+                    .channel_msg(&message, Context::new(&irc, &channel, &sender));
             });
         }
     }
