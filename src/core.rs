@@ -136,9 +136,9 @@ impl Core {
     ) {
         if is_valid_command(message, command_prefix) {
             self.handle_command(
-                irc.clone(),
-                channel.clone(),
-                sender.clone(),
+                Arc::clone(&irc),
+                Arc::clone(&channel),
+                Arc::clone(&sender),
                 &message[command_prefix.len()..],
             );
         }
@@ -164,9 +164,9 @@ impl Core {
                     match_found = true;
                     std::thread::spawn({
                         let plugin = plugin.plugin.clone();
-                        let irc = irc.clone();
-                        let channel = channel.clone();
-                        let sender = sender.clone();
+                        let irc = Arc::clone(&irc);
+                        let channel = Arc::clone(&channel);
+                        let sender = Arc::clone(&sender);
                         let arg = arg.trim_left().to_owned();
                         let fun = cmd.fun;
                         move || {
@@ -195,9 +195,9 @@ impl Core {
             std::thread::spawn({
                 let plugin = plugin.plugin.clone();
                 let message = message.to_owned();
-                let irc = irc.clone();
-                let channel = channel.clone();
-                let sender = sender.clone();
+                let irc = Arc::clone(&irc);
+                let channel = Arc::clone(&channel);
+                let sender = Arc::clone(&sender);
                 move || {
                     plugin
                         .lock()
@@ -252,7 +252,7 @@ impl SharedCore {
 impl Listener for SharedCore {
     fn welcome(&mut self, irc: Arc<Irc>) {
         let mut core = self.0.lock().unwrap();
-        core.irc_bridge.init(irc.clone());
+        core.irc_bridge.init(Arc::clone(&irc));
         for c in &core.config.lock().unwrap().bot.channels {
             irc.join(c, None).unwrap();
         }

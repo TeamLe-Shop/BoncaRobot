@@ -25,7 +25,7 @@ use std::thread;
 fn main() {
     // If the configuration file does not exist, try copying over the template.
     if !std::path::Path::new(config::PATH).exists() {
-        const TEMPLATE_PATH: &'static str = "boncarobot.template.toml";
+        const TEMPLATE_PATH: &str = "boncarobot.template.toml";
         std::fs::copy(TEMPLATE_PATH, config::PATH).unwrap_or_else(|e| {
             panic!(
                 "Could not copy {} to {}. Try copying it manually. (error: {})",
@@ -47,7 +47,7 @@ fn main() {
     server.push_str(":6667");
     let config = Arc::new(Mutex::new(config));
 
-    let core = SharedCore::new(config.clone());
+    let core = SharedCore::new(Arc::clone(&config));
     let core_clone = core.clone();
     thread::spawn(move || {
         let settings = hiirc::Settings::new(&server, &nick);

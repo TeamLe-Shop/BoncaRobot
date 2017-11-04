@@ -28,7 +28,7 @@ pub struct Config {
     pub plugins: HashMap<String, Plugin>,
 }
 
-pub const PATH: &'static str = "boncarobot.toml";
+pub const PATH: &str = "boncarobot.toml";
 
 fn load_file_to_string() -> Result<String, io::Error> {
     use std::fs::File;
