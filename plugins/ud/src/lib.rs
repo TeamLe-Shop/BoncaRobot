@@ -50,7 +50,7 @@ impl UdPlugin {
     fn ud(_this: &mut Plugin, arg: &str, ctx: Context) {
         Self::udlookup(arg, 0, ctx);
     }
-    fn udlookup(arg: &str, entry: usize, ctx: Context) {
+    fn udlookup(arg: &str, index: usize, ctx: Context) {
         if arg.is_empty() {
             ctx.send_channel("You need to search for something bro.");
             return;
@@ -64,19 +64,25 @@ impl UdPlugin {
                         return;
                     }
                 };
-                let mut entry = match json["list"][entry]["definition"].as_str() {
-                    Some(entry) => entry,
+                let entry = &json["list"][index];
+                let mut def = match entry["definition"].as_str() {
+                    Some(def) => def,
                     None => {
                         ctx.send_channel("ENGLISH, MOTHERFUCKER.");
                         return;
                     }
                 };
-                let too_large = entry.len() > 400;
+                let too_large = def.len() > 400;
                 if too_large {
-                    entry = &entry[..400];
+                    def = &def[..400];
                 }
-                for line in entry.lines() {
+                for line in def.lines() {
                     ctx.send_channel(line);
+                }
+                if let Some(example) = entry["example"].as_str() {
+                    for line in example.lines() {
+                        ctx.send_channel(&format!("> {}", line));
+                    }
                 }
                 if too_large {
                     ctx.send_channel(&format!(
