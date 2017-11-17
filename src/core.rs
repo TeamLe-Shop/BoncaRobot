@@ -73,13 +73,13 @@ impl Core {
     }
     fn channel_msg(
         &mut self,
-        irc: Arc<Irc>,
-        channel: Arc<Channel>,
-        sender: Arc<ChannelUser>,
+        irc: &Arc<Irc>,
+        channel: &Arc<Channel>,
+        sender: &Arc<ChannelUser>,
         message: &str,
     ) {
         let prefix = self.config.lock().unwrap().bot.cmd_prefix.clone();
-        if !self.handle_help(&prefix, &irc, &channel, &sender, message) {
+        if !self.handle_help(&prefix, irc, channel, sender, message) {
             self.delegate_to_plugins(&prefix, irc, channel, sender, message);
         }
     }
@@ -129,26 +129,21 @@ impl Core {
     fn delegate_to_plugins(
         &mut self,
         command_prefix: &str,
-        irc: Arc<Irc>,
-        channel: Arc<Channel>,
-        sender: Arc<ChannelUser>,
+        irc: &Arc<Irc>,
+        channel: &Arc<Channel>,
+        sender: &Arc<ChannelUser>,
         message: &str,
     ) {
         if is_valid_command(message, command_prefix) {
-            self.handle_command(
-                Arc::clone(&irc),
-                Arc::clone(&channel),
-                Arc::clone(&sender),
-                &message[command_prefix.len()..],
-            );
+            self.handle_command(irc, channel, sender, &message[command_prefix.len()..]);
         }
         self.delegate_non_command(irc, channel, sender, message);
     }
     fn handle_command(
         &mut self,
-        irc: Arc<Irc>,
-        channel: Arc<Channel>,
-        sender: Arc<ChannelUser>,
+        irc: &Arc<Irc>,
+        channel: &Arc<Channel>,
+        sender: &Arc<ChannelUser>,
         command: &str,
     ) {
         let mut sw = SplitWhitespace::new(command);
@@ -164,9 +159,9 @@ impl Core {
                     match_found = true;
                     std::thread::spawn({
                         let plugin = plugin.plugin.clone();
-                        let irc = Arc::clone(&irc);
-                        let channel = Arc::clone(&channel);
-                        let sender = Arc::clone(&sender);
+                        let irc = Arc::clone(irc);
+                        let channel = Arc::clone(channel);
+                        let sender = Arc::clone(sender);
                         let arg = arg.trim_left().to_owned();
                         let fun = cmd.fun;
                         move || {
@@ -186,17 +181,17 @@ impl Core {
     }
     fn delegate_non_command(
         &mut self,
-        irc: Arc<Irc>,
-        channel: Arc<Channel>,
-        sender: Arc<ChannelUser>,
+        irc: &Arc<Irc>,
+        channel: &Arc<Channel>,
+        sender: &Arc<ChannelUser>,
         message: &str,
     ) {
         for plugin in self.plugins.values_mut() {
             let plugin = plugin.plugin.clone();
             let message = message.to_owned();
-            let irc = Arc::clone(&irc);
-            let channel = Arc::clone(&channel);
-            let sender = Arc::clone(&sender);
+            let irc = Arc::clone(irc);
+            let channel = Arc::clone(channel);
+            let sender = Arc::clone(sender);
             std::thread::spawn(move || {
                 plugin
                     .lock()
@@ -262,6 +257,6 @@ impl Listener for SharedCore {
         sender: Arc<ChannelUser>,
         message: &str,
     ) {
-        self.lock().channel_msg(irc, channel, sender, message);
+        self.lock().channel_msg(&irc, &channel, &sender, message);
     }
 }
