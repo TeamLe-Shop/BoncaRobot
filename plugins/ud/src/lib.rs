@@ -5,9 +5,9 @@ extern crate reqwest;
 extern crate split_whitespace_rest;
 
 use plugin_api::prelude::*;
+use split_whitespace_rest::SplitWhitespace;
 use std::error::Error;
 use std::io::prelude::*;
-use split_whitespace_rest::SplitWhitespace;
 
 pub fn query(query: &str) -> Result<String, Box<Error>> {
     let msg = format!(
