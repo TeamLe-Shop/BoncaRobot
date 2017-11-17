@@ -245,10 +245,10 @@ impl SharedCore {
 impl Listener for SharedCore {
     fn welcome(&mut self, irc: Arc<Irc>) {
         let mut core = self.0.lock().unwrap();
-        core.irc_bridge.init(Arc::clone(&irc));
         for c in &core.config.lock().unwrap().bot.channels {
             irc.join(c, None).unwrap();
         }
+        core.irc_bridge.init(irc);
     }
     fn channel_msg(
         &mut self,
