@@ -19,7 +19,6 @@ pub fn fetch_page(link: &str) -> Result<String, Box<Error>> {
     Ok(String::from_utf8_lossy(&content).into_owned())
 }
 
-
 fn find_title(body: &str) -> String {
     use scraper::{Html, Selector};
 
