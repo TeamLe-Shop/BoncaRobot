@@ -60,7 +60,18 @@ impl UdPlugin {
                 return;
             }
         };
-        ud_lookup_matching(sw.rest_as_slice(), needle, ctx);
+        ud_lookup_matching(sw.rest_as_slice(), needle, ctx, false);
+    }
+    fn udf(_this: &mut Plugin, arg: &str, ctx: Context) {
+        let mut sw = SplitWhitespace::new(arg);
+        let exclude = match sw.next() {
+            Some(en) => en,
+            None => {
+                ctx.send_channel("Need needle, bro.");
+                return;
+            }
+        };
+        ud_lookup_matching(sw.rest_as_slice(), exclude, ctx, true);
     }
 }
 
@@ -96,18 +107,26 @@ fn udlookup(arg: &str, index: usize, ctx: Context) {
     });
 }
 
-fn ud_lookup_matching(arg: &str, needle: &str, ctx: Context) {
+fn ud_lookup_matching(arg: &str, needle: &str, ctx: Context, invert: bool) {
     with_json(arg, ctx, |json| {
         let entries = &json["list"];
         for v in entries.members() {
             if let Some(def) = v["definition"].as_str() {
-                if def.to_lowercase().contains(&needle.to_lowercase()) {
+                let matches = def.to_lowercase().contains(&needle.to_lowercase());
+                if (!invert && matches) || (invert && !matches) {
                     display_def(def, v["example"].as_str(), arg, ctx);
                     return;
                 }
             }
         }
-        ctx.send_channel("No such luck, bro.");
+        let tmp;
+        let msg = if !invert {
+            "No such luck, bro."
+        } else {
+            tmp = format!("Every. Single. Fucking. Entry. Contains. {}.", needle);
+            &tmp
+        };
+        ctx.send_channel(msg);
     })
 }
 
@@ -140,6 +159,7 @@ impl Plugin for UdPlugin {
         meta.command("ud", "Urban dictionary lookup", Self::ud);
         meta.command("udn", "Urban dictionary lookup (entry n)", Self::udn);
         meta.command("udc", "Search urban haystack for needle", Self::udc);
+        meta.command("udf", "ud FUCK THIS SHIT", Self::udf);
     }
 }
 
