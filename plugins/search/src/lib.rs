@@ -8,8 +8,8 @@ use plugin_api::prelude::*;
 use std::error::Error;
 use std::io::prelude::*;
 
-pub fn query_google(query: &str) -> Result<String, Box<Error>> {
-    let msg = format!("http://www.google.com/search?q={}", query);
+pub fn query(base: &str, query: &str) -> Result<String, Box<Error>> {
+    let msg = format!("{}{}", base, query);
 
     let mut resp = reqwest::get(&msg)?;
 
@@ -74,8 +74,9 @@ impl SearchPlugin {
     fn search(_this: &mut Plugin, arg: &str, ctx: Context) {
         if arg.is_empty() {
             ctx.send_channel("You need to search for something bro.");
+            return;
         }
-        match query_google(arg) {
+        match query("http://www.google.com/search?q=", arg) {
             Ok(body) => match parse_first_result(&body) {
                 Ok(result) => {
                     ctx.send_channel(&result);
@@ -89,6 +90,28 @@ impl SearchPlugin {
             }
         }
     }
+    fn ytsearch(_this: &mut Plugin, arg: &str, ctx: Context) {
+        if arg.is_empty() {
+            ctx.send_channel("FLAVA FLAVA FOR MY PEOPLE PEOPLE, COME ON KID, HERE COMES THE FINAL");
+            return;
+        }
+        match query("https://www.youtube.com/results?search_query={}", arg) {
+            Ok(body) => match extract_yt(&body) {
+                Ok(link) => ctx.send_channel(&format!("https://youtu.be/{}", link)),
+                Err(e) => ctx.send_channel(&format!("Error extracting: {}", e)),
+            },
+            Err(e) => ctx.send_channel(&format!("Error when yting: {}", e)),
+        }
+    }
+}
+
+fn extract_yt(input: &str) -> Result<&str, Box<Error>> {
+    let link = input.find("/watch?v=").ok_or("No yt link found")?;
+    let from_watch = &input[link..];
+    let quot = from_watch.find('"').ok_or("Unterminated link")?;
+    Ok(input
+        .get(link + 9..link + quot)
+        .ok_or("Link slicing fail.")?)
 }
 
 impl Plugin for SearchPlugin {
@@ -97,6 +120,7 @@ impl Plugin for SearchPlugin {
     }
     fn register(&self, meta: &mut PluginMeta) {
         meta.command("search", "Googuru search", Self::search);
+        meta.command("ytsearch", "Jewtube search", Self::ytsearch);
     }
 }
 
