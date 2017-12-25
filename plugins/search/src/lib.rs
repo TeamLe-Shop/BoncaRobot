@@ -61,7 +61,7 @@ pub fn parse_first_result(body: &str) -> Result<String, Box<Error>> {
             .attr("href")
             .ok_or("<a> should have a href, but it doesn't")?;
         let href = url::percent_encoding::percent_decode(href.as_bytes()).decode_utf8()?;
-        if href.starts_with("/search?q=") {
+        if href.starts_with("/search?q=") || href.contains("books.google.hu") {
             continue;
         }
         return Ok(parse_href(&href)?.to_owned());
