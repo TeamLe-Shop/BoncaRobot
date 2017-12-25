@@ -48,8 +48,10 @@ pub fn parse_first_result(body: &str) -> Result<String, Box<Error>> {
     let sel = Selector::parse("h3.r").unwrap();
     let mut h3s = html.select(&sel);
     loop {
-        let h3 = h3s.next()
-            .ok_or("There should be a h3 class=\"r\", but there isn't")?;
+        let h3 = match h3s.next() {
+            Some(h3) => h3,
+            None => return Ok("Your Google-Fu fails you.".into()),
+        };
         let sel = Selector::parse("a").unwrap();
         // Fucking bullshit instant answer boxes. Can't be bothered to parse them.
         // Just skip to next h3.r result.
