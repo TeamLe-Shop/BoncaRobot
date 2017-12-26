@@ -155,7 +155,7 @@ impl Core {
         let mut match_found = false;
         for plugin in self.plugins.values_mut() {
             for cmd in &plugin.meta.commands {
-                if command == cmd.name {
+                if command.to_lowercase() == cmd.name {
                     match_found = true;
                     std::thread::spawn({
                         let plugin = plugin.plugin.clone();
