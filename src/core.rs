@@ -1,5 +1,6 @@
 use config::Config;
 use hiirc::{Channel, ChannelUser, Irc, IrcWrite, Listener};
+use levenshtein::levenshtein;
 use plugin_api::Context;
 use plugin_container::PluginContainer;
 use split_whitespace_rest::SplitWhitespace;
@@ -146,6 +147,7 @@ impl Core {
         sender: &Arc<ChannelUser>,
         command: &str,
     ) {
+        let command = &command.to_lowercase();
         let mut sw = SplitWhitespace::new(command);
         let command = match sw.next() {
             Some(command) => command,
@@ -153,9 +155,10 @@ impl Core {
         };
         let arg = sw.rest_as_slice();
         let mut match_found = false;
+        let mut closest_match = ("", usize::max_value());
         for plugin in self.plugins.values_mut() {
             for cmd in &plugin.meta.commands {
-                if command.to_lowercase() == cmd.name {
+                if command == cmd.name {
                     match_found = true;
                     std::thread::spawn({
                         let plugin = plugin.plugin.clone();
@@ -172,11 +175,22 @@ impl Core {
                             );
                         }
                     });
+                } else {
+                    let distance = levenshtein(command, cmd.name);
+                    if distance < closest_match.1 {
+                        closest_match = (&cmd.name, distance);
+                    }
                 }
             }
         }
         if !match_found {
-            let _ = irc.privmsg(channel.name(), &format!("Unknown command: {}", command));
+            let _ = irc.privmsg(
+                channel.name(),
+                &format!(
+                    "Unknown command: {}. Did you mean '{}'?",
+                    command, closest_match.0
+                ),
+            );
         }
     }
     fn delegate_non_command(
