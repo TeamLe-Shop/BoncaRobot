@@ -4,8 +4,8 @@
 //!
 //! It can also be controlled locally through IPC using zeromq.
 
+extern crate distance;
 extern crate hiirc;
-extern crate levenshtein;
 extern crate libloading;
 extern crate plugin_api;
 extern crate scaproust;

@@ -1,6 +1,6 @@
 use config::Config;
+use distance::damerau_levenshtein;
 use hiirc::{Channel, ChannelUser, Irc, IrcWrite, Listener};
-use levenshtein::levenshtein;
 use plugin_api::Context;
 use plugin_container::PluginContainer;
 use split_whitespace_rest::SplitWhitespace;
@@ -176,7 +176,7 @@ impl Core {
                         }
                     });
                 } else {
-                    let distance = levenshtein(command, cmd.name);
+                    let distance = damerau_levenshtein(command, cmd.name);
                     if distance < closest_match.1 {
                         closest_match = (&cmd.name, distance);
                     }
