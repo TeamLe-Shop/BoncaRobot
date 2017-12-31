@@ -12,17 +12,30 @@ fn wikiencode(query: &str) -> String {
     query.replace(' ', "%20").replace('&', "%26")
 }
 
-pub fn query(query: &str) -> Result<String, Box<Error>> {
-    let query = wikiencode(query);
+fn query_opensearch(what: &str) -> Result<String, Box<Error>> {
+    let what = wikiencode(what);
+
+    let msg = format!(
+        "https://en.wikipedia.org/w/api.php?action=opensearch&search={}&format=json",
+        what
+    );
+    query(&msg)
+}
+
+fn query_wp(what: &str) -> Result<String, Box<Error>> {
+    let what = wikiencode(what);
 
     let msg = format!(
         "https://en.wikipedia.org/w/api.php?format=json\
          &action=query&prop=extracts&exintro&explaintext\
          &exchars=300&redirects&titles={}",
-        query
+        what
     );
+    query(&msg)
+}
 
-    let mut resp = reqwest::get(&msg)?;
+fn query(msg: &str) -> Result<String, Box<Error>> {
+    let mut resp = reqwest::get(msg)?;
 
     if !resp.status().is_success() {
         return Err("Something went wrong with the request".into());
@@ -33,6 +46,49 @@ pub fn query(query: &str) -> Result<String, Box<Error>> {
     Ok(String::from_utf8_lossy(&content).into_owned())
 }
 
+fn process_wp_result(result: Result<String, Box<Error>>, article_name: &str, ctx: Context) {
+    match result {
+        Ok(body) => {
+            let json = match json::parse(&body) {
+                Ok(json) => json,
+                Err(e) => {
+                    ctx.send_channel(&format!("Phailed parsing json ({})", e));
+                    return;
+                }
+            };
+            let pages = &json["query"]["pages"];
+            // Just grab first page
+            let page = match pages.entries().nth(0) {
+                Some((_k, v)) => v,
+                None => {
+                    ctx.send_channel("No wiki page found.");
+                    return;
+                }
+            };
+            match page["extract"].as_str() {
+                Some(extract) => {
+                    for line in extract.lines() {
+                        ctx.send_channel(line);
+                    }
+                    let encoded = wikiencode(article_name);
+                    let url = format!("https://en.wikipedia.org/wiki/{}", encoded);
+
+                    ctx.send_channel(&url);
+                }
+                None => {
+                    ctx.send_channel(
+                        "YOU BETRAYED ME, OPENSEARCH. HOW COULD YOU DARE? HOW COULD YOU DAAAARE!?",
+                    );
+                    return;
+                }
+            }
+        }
+        Err(e) => {
+            ctx.send_channel(&format!("Error when wikiing: {}", e));
+        }
+    }
+}
+
 struct WPlugin;
 
 impl WPlugin {
@@ -41,7 +97,7 @@ impl WPlugin {
             ctx.send_channel("You need to search for something bro.");
             return;
         }
-        match query(arg) {
+        match query_opensearch(arg) {
             Ok(body) => {
                 let json = match json::parse(&body) {
                     Ok(json) => json,
@@ -50,28 +106,10 @@ impl WPlugin {
                         return;
                     }
                 };
-                let pages = &json["query"]["pages"];
-                // Just grab first page
-                let page = match pages.entries().nth(0) {
-                    Some((_k, v)) => v,
-                    None => {
-                        ctx.send_channel("No wiki page found.");
-                        return;
-                    }
-                };
-                match page["extract"].as_str() {
-                    Some(extract) => {
-                        for line in extract.lines() {
-                            ctx.send_channel(line);
-                        }
-                        let article_name = match json["query"]["redirects"][0]["to"].as_str() {
-                            Some(redirect) => redirect,
-                            None => arg,
-                        };
-                        let encoded = wikiencode(article_name);
-                        let url = format!("https://en.wikipedia.org/wiki/{}", encoded);
-
-                        ctx.send_channel(&url);
+                match json[1][0].as_str() {
+                    Some(name) => {
+                        let wp_result = query_wp(name);
+                        process_wp_result(wp_result, name, ctx);
                     }
                     None => {
                         ctx.send_channel(r#"¯\_(ツ)_/¯"#);
@@ -79,9 +117,7 @@ impl WPlugin {
                     }
                 }
             }
-            Err(e) => {
-                ctx.send_channel(&format!("Error when wikiing: {}", e));
-            }
+            Err(e) => ctx.send_channel(&format!("Error when wikiing: {}", e)),
         }
     }
 }
