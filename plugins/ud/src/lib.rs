@@ -132,8 +132,12 @@ fn ud_lookup_matching(arg: &str, needle: &str, ctx: Context, invert: bool) {
 
 fn display_def(mut def: &str, example: Option<&str>, arg: &str, ctx: Context) {
     let too_large = def.len() > 400;
+    let mut cutoff = 400;
+    while !def.is_char_boundary(cutoff) {
+        cutoff -= 1;
+    }
     if too_large {
-        def = &def[..400];
+        def = &def[..cutoff];
     }
     for line in def.lines() {
         ctx.send_channel(line);
