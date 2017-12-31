@@ -147,12 +147,12 @@ impl Core {
         sender: &Arc<ChannelUser>,
         command: &str,
     ) {
-        let command = &command.to_lowercase();
         let mut sw = SplitWhitespace::new(command);
         let command = match sw.next() {
             Some(command) => command,
             None => return,
         };
+        let command = &command.to_lowercase();
         let arg = sw.rest_as_slice();
         let mut match_found = false;
         let mut closest_match = ("", usize::max_value());
