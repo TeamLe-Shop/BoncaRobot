@@ -28,7 +28,7 @@ fn query_wp(what: &str) -> Result<String, Box<Error>> {
     let msg = format!(
         "https://en.wikipedia.org/w/api.php?format=json\
          &action=query&prop=extracts&exintro&explaintext\
-         &exchars=300&redirects&titles={}",
+         &exchars=385&redirects&titles={}",
         what
     );
     query(&msg)
