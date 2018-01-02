@@ -110,6 +110,7 @@ fn udlookup(arg: &str, index: usize, ctx: Context) {
 fn ud_lookup_matching(arg: &str, needle: &str, ctx: Context, invert: bool) {
     with_json(arg, ctx, |json| {
         let entries = &json["list"];
+        let mut itered_through = 0;
         for v in entries.members() {
             if let Some(def) = v["definition"].as_str() {
                 let matches = def.to_lowercase().contains(&needle.to_lowercase());
@@ -118,15 +119,19 @@ fn ud_lookup_matching(arg: &str, needle: &str, ctx: Context, invert: bool) {
                     return;
                 }
             }
+            itered_through += 1;
         }
-        let tmp;
-        let msg = if !invert {
-            "No such luck, bro."
+        if !invert {
+            ctx.send_channel(&format!(
+                "None of the {} entries contained {}.",
+                itered_through, needle
+            ));
         } else {
-            tmp = format!("Every. Single. Fucking. Entry. Contains. {}.", needle);
-            &tmp
+            ctx.send_channel(&format!(
+                "Every single entry out of {} contained {}.",
+                itered_through, needle
+            ));
         };
-        ctx.send_channel(msg);
     })
 }
 
