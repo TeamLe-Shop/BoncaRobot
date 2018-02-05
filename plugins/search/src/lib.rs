@@ -8,7 +8,7 @@ use http_request_common::fetch_string;
 use plugin_api::prelude::*;
 use std::error::Error;
 
-const URLQ: &'static str = "/url?q=";
+const URLQ: &str = "/url?q=";
 
 fn parse_urlq(urlq: &str) -> Result<&str, Box<Error>> {
     let begin = URLQ.len();

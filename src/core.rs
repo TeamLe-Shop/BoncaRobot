@@ -178,7 +178,7 @@ impl Core {
                 } else {
                     let distance = damerau_levenshtein(command, cmd.name);
                     if distance < closest_match.1 {
-                        closest_match = (&cmd.name, distance);
+                        closest_match = (cmd.name, distance);
                     }
                 }
             }
