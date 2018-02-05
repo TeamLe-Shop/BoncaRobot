@@ -20,13 +20,10 @@ fn query_opensearch(what: &str) -> Result<String, Box<Error>> {
 }
 
 fn query_wp(what: &str) -> Result<String, Box<Error>> {
-    let wot = format!(
-        "https://en.wikipedia.org/w/api.php?format=json
+    let base = "https://en.wikipedia.org/w/api.php?format=json
                 &action=query&prop=extracts&exintro&explaintext\
-                &exchars=385&redirects&titles={}",
-        what
-    );
-    fetch_string(&wot, "")
+                &exchars=385&redirects&titles=";
+    fetch_string(base, &what)
 }
 
 fn process_wp_result(result: Result<String, Box<Error>>, article_name: &str, ctx: Context) {
