@@ -2,7 +2,7 @@
 //!
 //! Boncactl is an IRC bot whose functionality is implemented through plugins.
 //!
-//! It can also be controlled locally through IPC using zeromq.
+//! It can also be controlled locally through IPC.
 
 extern crate distance;
 extern crate hiirc;
