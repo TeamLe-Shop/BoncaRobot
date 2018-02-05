@@ -15,8 +15,6 @@ command-prefix = "."
 [plugins.shift]
 # Optional custom path. By default, it looks for `target/{debug or release}/libpluginname.so`.
 # path = "plugins/shift/target/release/libshift.so"
-# Rusty calculator
-[plugins.rc]
 # GOOGURU
 [plugins.search]
 # Feex eet, white male.

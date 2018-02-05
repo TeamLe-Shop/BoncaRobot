@@ -446,11 +446,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "librc"
-version = "0.1.0"
-source = "git+https://github.com/crumblingstatue/rc.git#e9fd585f813d74ee45b8f53c38740eff7b856f1c"
-
-[[package]]
 name = "linktitle"
 version = "0.1.0"
 dependencies = [
@@ -718,14 +713,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "fuchsia-zircon 0.2.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "libc 0.2.34 (registry+https://github.com/rust-lang/crates.io-index)",
-]
-
-[[package]]
-name = "rc"
-version = "0.1.0"
-dependencies = [
- "boncarobot 0.1.0",
- "librc 0.1.0 (git+https://github.com/crumblingstatue/rc.git)",
 ]
 
 [[package]]
@@ -1307,7 +1294,6 @@ dependencies = [
 "checksum libc 0.2.34 (registry+https://github.com/rust-lang/crates.io-index)" = "36fbc8a8929c632868295d0178dd8f63fc423fd7537ad0738372bd010b3ac9b0"
 "checksum libflate 0.1.13 (registry+https://github.com/rust-lang/crates.io-index)" = "6e0ae8f2ea4a426e1af2c2c1ba5696bd597368afe5068f9485fc960973fe6dfb"
 "checksum libloading 0.4.3 (registry+https://github.com/rust-lang/crates.io-index)" = "fd38073de8f7965d0c17d30546d4bb6da311ab428d1c7a3fc71dff7f9d4979b9"
-"checksum librc 0.1.0 (git+https://github.com/crumblingstatue/rc.git)" = "<none>"
 "checksum log 0.3.9 (registry+https://github.com/rust-lang/crates.io-index)" = "e19e8d5c34a3e0e2223db8e060f9e8264aeeb5c5fc64a4ee9965c062211c024b"
 "checksum log 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)" = "b3a89a0c46ba789b8a247d4c567aed4d7c68e624672d238b45cc3ec20dc9f940"
 "checksum loirc 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)" = "20456986a5a085e240a37488d79b326806f84979d60157dbeebcbe3ca63219cb"
