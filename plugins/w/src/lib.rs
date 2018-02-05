@@ -20,8 +20,6 @@ fn query_opensearch(what: &str) -> Result<String, Box<Error>> {
 }
 
 fn query_wp(what: &str) -> Result<String, Box<Error>> {
-    let what = wikiencode(what);
-
     let base = "https://en.wikipedia.org/w/api.php?format=json
                 &action=query&prop=extracts&exintro&explaintext\
                 &exchars=385&redirects&titles=";
