@@ -10,11 +10,7 @@ use split_whitespace_rest::SplitWhitespace;
 use std::error::Error;
 
 pub fn query(query: &str) -> Result<String, Box<Error>> {
-    let msg = format!(
-        "http://api.urbandictionary.com/v0/define?term={}",
-        query.replace(' ', "%20").replace('&', "%26")
-    );
-    http_request_common::fetch_string(&msg)
+    http_request_common::fetch_string("http://api.urbandictionary.com/v0/define?term=", query)
 }
 
 struct UdPlugin;

@@ -64,7 +64,7 @@ impl SearchPlugin {
             ctx.send_channel("You need to search for something bro.");
             return;
         }
-        match fetch_string(&format!("http://www.google.com/search?q={}", arg)) {
+        match fetch_string("http://www.google.com/search?q=", arg) {
             Ok(body) => match parse_first_result(&body) {
                 Ok(result) => {
                     ctx.send_channel(&result);
@@ -83,10 +83,7 @@ impl SearchPlugin {
             ctx.send_channel("FLAVA FLAVA FOR MY PEOPLE PEOPLE, COME ON KID, HERE COMES THE FINAL");
             return;
         }
-        match fetch_string(&format!(
-            "https://www.youtube.com/results?search_query={}",
-            arg
-        )) {
+        match fetch_string("https://www.youtube.com/results?search_query=", arg) {
             Ok(body) => match extract_yt(&body) {
                 Ok(link) => ctx.send_channel(&format!("https://youtu.be/{}", link)),
                 Err(e) => ctx.send_channel(&format!("Error extracting: {}", e)),

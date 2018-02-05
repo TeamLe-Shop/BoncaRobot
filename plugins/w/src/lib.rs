@@ -13,25 +13,19 @@ fn wikiencode(query: &str) -> String {
 }
 
 fn query_opensearch(what: &str) -> Result<String, Box<Error>> {
-    let what = wikiencode(what);
-
-    let msg = format!(
-        "https://en.wikipedia.org/w/api.php?action=opensearch&search={}&format=json",
-        what
-    );
-    fetch_string(&msg)
+    fetch_string(
+        "https://en.wikipedia.org/w/api.php?action=opensearch&format=json&search=",
+        what,
+    )
 }
 
 fn query_wp(what: &str) -> Result<String, Box<Error>> {
     let what = wikiencode(what);
 
-    let msg = format!(
-        "https://en.wikipedia.org/w/api.php?format=json\
-         &action=query&prop=extracts&exintro&explaintext\
-         &exchars=385&redirects&titles={}",
-        what
-    );
-    fetch_string(&msg)
+    let base = "https://en.wikipedia.org/w/api.php?format=json
+                &action=query&prop=extracts&exintro&explaintext\
+                &exchars=385&redirects&titles=";
+    fetch_string(base, &what)
 }
 
 fn process_wp_result(result: Result<String, Box<Error>>, article_name: &str, ctx: Context) {

@@ -18,7 +18,7 @@ fn find_title(body: &str) -> String {
 }
 
 fn get_title(link: &str) -> String {
-    let page = match http_request_common::fetch_string(link) {
+    let page = match http_request_common::fetch_string(link, "") {
         Ok(page) => page,
         Err(e) => return format!("[error: {}]", e),
     };

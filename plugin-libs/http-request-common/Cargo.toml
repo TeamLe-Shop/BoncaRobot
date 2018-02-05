@@ -5,3 +5,4 @@ authors = ["Mika Attila <radiantstatue@gmail.com>"]
 
 [dependencies]
 reqwest = "0.8.4"
+percent-encoding = "1.0.1"
