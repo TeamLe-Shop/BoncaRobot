@@ -1,26 +1,12 @@
+extern crate http_request_common;
 #[macro_use]
 extern crate plugin_api;
-extern crate reqwest;
 extern crate scraper;
 extern crate url;
 
+use http_request_common::fetch_string;
 use plugin_api::prelude::*;
 use std::error::Error;
-use std::io::prelude::*;
-
-pub fn query(base: &str, query: &str) -> Result<String, Box<Error>> {
-    let msg = format!("{}{}", base, query);
-
-    let mut resp = reqwest::get(&msg)?;
-
-    if !resp.status().is_success() {
-        return Err("Something went wrong with the request".into());
-    }
-
-    let mut content = Vec::new();
-    resp.read_to_end(&mut content)?;
-    Ok(String::from_utf8_lossy(&content).into_owned())
-}
 
 const URLQ: &'static str = "/url?q=";
 
@@ -78,7 +64,7 @@ impl SearchPlugin {
             ctx.send_channel("You need to search for something bro.");
             return;
         }
-        match query("http://www.google.com/search?q=", arg) {
+        match fetch_string(&format!("http://www.google.com/search?q={}", arg)) {
             Ok(body) => match parse_first_result(&body) {
                 Ok(result) => {
                     ctx.send_channel(&result);
@@ -97,7 +83,10 @@ impl SearchPlugin {
             ctx.send_channel("FLAVA FLAVA FOR MY PEOPLE PEOPLE, COME ON KID, HERE COMES THE FINAL");
             return;
         }
-        match query("https://www.youtube.com/results?search_query={}", arg) {
+        match fetch_string(&format!(
+            "https://www.youtube.com/results?search_query={}",
+            arg
+        )) {
             Ok(body) => match extract_yt(&body) {
                 Ok(link) => ctx.send_channel(&format!("https://youtu.be/{}", link)),
                 Err(e) => ctx.send_channel(&format!("Error extracting: {}", e)),

@@ -1,30 +1,20 @@
+extern crate http_request_common;
 extern crate json;
 #[macro_use]
 extern crate plugin_api;
-extern crate reqwest;
 extern crate split_whitespace_rest;
 
 use json::JsonValue;
 use plugin_api::prelude::*;
 use split_whitespace_rest::SplitWhitespace;
 use std::error::Error;
-use std::io::prelude::*;
 
 pub fn query(query: &str) -> Result<String, Box<Error>> {
     let msg = format!(
         "http://api.urbandictionary.com/v0/define?term={}",
         query.replace(' ', "%20").replace('&', "%26")
     );
-
-    let mut resp = reqwest::get(&msg)?;
-
-    if !resp.status().is_success() {
-        return Err("Something went wrong with the request".into());
-    }
-
-    let mut content = Vec::new();
-    resp.read_to_end(&mut content)?;
-    Ok(String::from_utf8_lossy(&content).into_owned())
+    http_request_common::fetch_string(&msg)
 }
 
 struct UdPlugin;

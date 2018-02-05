@@ -1,23 +1,9 @@
+extern crate http_request_common;
 #[macro_use]
 extern crate plugin_api;
-extern crate reqwest;
 extern crate scraper;
 
 use plugin_api::prelude::*;
-use std::error::Error;
-use std::io::prelude::*;
-
-pub fn fetch_page(link: &str) -> Result<String, Box<Error>> {
-    let mut resp = reqwest::get(link)?;
-
-    if !resp.status().is_success() {
-        return Err("Something went wrong with the request".into());
-    }
-
-    let mut content = Vec::new();
-    resp.read_to_end(&mut content)?;
-    Ok(String::from_utf8_lossy(&content).into_owned())
-}
 
 fn find_title(body: &str) -> String {
     use scraper::{Html, Selector};
@@ -32,7 +18,7 @@ fn find_title(body: &str) -> String {
 }
 
 fn get_title(link: &str) -> String {
-    let page = match fetch_page(link) {
+    let page = match http_request_common::fetch_string(link) {
         Ok(page) => page,
         Err(e) => return format!("[error: {}]", e),
     };

@@ -4,9 +4,11 @@ version = "0.1.0"
 authors = ["Mika Attila <radiantstatue@gmail.com>"]
 
 [dependencies]
-reqwest = "0.7.1"
 scraper = "*"
 url = "*"
+
+[dependencies.http-request-common]
+path = "../../plugin-libs/http-request-common"
 
 [dependencies.boncarobot]
 path ="../../"

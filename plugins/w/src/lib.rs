@@ -1,11 +1,11 @@
+extern crate http_request_common;
 extern crate json;
 #[macro_use]
 extern crate plugin_api;
-extern crate reqwest;
 
+use http_request_common::fetch_string;
 use plugin_api::prelude::*;
 use std::error::Error;
-use std::io::prelude::*;
 
 // Encode query into URL format acceptable by wikipedia
 fn wikiencode(query: &str) -> String {
@@ -19,7 +19,7 @@ fn query_opensearch(what: &str) -> Result<String, Box<Error>> {
         "https://en.wikipedia.org/w/api.php?action=opensearch&search={}&format=json",
         what
     );
-    query(&msg)
+    fetch_string(&msg)
 }
 
 fn query_wp(what: &str) -> Result<String, Box<Error>> {
@@ -31,19 +31,7 @@ fn query_wp(what: &str) -> Result<String, Box<Error>> {
          &exchars=385&redirects&titles={}",
         what
     );
-    query(&msg)
-}
-
-fn query(msg: &str) -> Result<String, Box<Error>> {
-    let mut resp = reqwest::get(msg)?;
-
-    if !resp.status().is_success() {
-        return Err("Something went wrong with the request".into());
-    }
-
-    let mut content = Vec::new();
-    resp.read_to_end(&mut content)?;
-    Ok(String::from_utf8_lossy(&content).into_owned())
+    fetch_string(&msg)
 }
 
 fn process_wp_result(result: Result<String, Box<Error>>, article_name: &str, ctx: Context) {
