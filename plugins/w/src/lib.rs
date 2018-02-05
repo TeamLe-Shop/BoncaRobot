@@ -32,7 +32,7 @@ fn process_wp_result(result: Result<String, Box<Error>>, article_name: &str, ctx
             let json = match json::parse(&body) {
                 Ok(json) => json,
                 Err(e) => {
-                    ctx.send_channel(&format!("Phailed parsing json ({})", e));
+                    ctx.send_channel(&format!("Phailed parsing json ({}). Body: {}", e, body));
                     return;
                 }
             };
