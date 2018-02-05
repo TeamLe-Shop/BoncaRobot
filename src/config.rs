@@ -18,7 +18,8 @@ pub struct Server {
 pub struct Bot {
     pub nick: String,
     pub channels: Vec<String>,
-    #[serde(rename = "command-prefix")] pub cmd_prefix: String,
+    #[serde(rename = "command-prefix")]
+    pub cmd_prefix: String,
 }
 
 #[derive(Deserialize)]
