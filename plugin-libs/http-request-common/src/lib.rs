@@ -18,11 +18,11 @@ pub fn fetch_string(base: &str, user_query: &str) -> Result<String, Box<Error>> 
 
     let status = resp.status();
 
-    if !status.is_success() {
-        return Err(status.to_string().into());
-    }
 
     let mut content = Vec::new();
     resp.read_to_end(&mut content)?;
+    if content.is_empty() && !status.is_success() {
+        return Err(status.to_string().into());
+    }
     Ok(String::from_utf8_lossy(&content).into_owned())
 }
