@@ -18,11 +18,17 @@ fn find_title(body: &str) -> String {
 }
 
 fn get_title(link: &str) -> String {
-    let page = match http_request_common::fetch_string(link, "") {
+    let (page, status) = match http_request_common::fetch_string(link, "") {
         Ok(page) => page,
         Err(e) => return format!("[error: {}]", e),
     };
-    find_title(&page)
+    let title = find_title(&page);
+    if status.is_success() {
+        title
+    } else {
+        format!("[{}] {}", status, title)
+    }
+    
 }
 
 struct LinkTitlePlugin;
