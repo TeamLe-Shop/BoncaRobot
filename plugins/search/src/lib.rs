@@ -65,14 +65,20 @@ impl SearchPlugin {
             return;
         }
         match fetch_string("http://www.google.com/search?q=", arg) {
-            Ok(body) => match parse_first_result(&body) {
-                Ok(result) => {
-                    ctx.send_channel(&result);
+            Ok((body, status)) => {
+                if status.is_success() {
+                    match parse_first_result(&body) {
+                        Ok(result) => {
+                            ctx.send_channel(&result);
+                        }
+                        Err(e) => {
+                            ctx.send_channel(&format!("Error: {}", e));
+                        }
+                    }
+                } else {
+                    ctx.send_channel(&format!("HTTP status: {}", status));
                 }
-                Err(e) => {
-                    ctx.send_channel(&format!("Error: {}", e));
-                }
-            },
+            }
             Err(e) => {
                 ctx.send_channel(&format!("Error when googuring: {}", e));
             }
@@ -84,10 +90,16 @@ impl SearchPlugin {
             return;
         }
         match fetch_string("https://www.youtube.com/results?search_query=", arg) {
-            Ok(body) => match extract_yt(&body) {
-                Ok(link) => ctx.send_channel(&format!("https://youtu.be/{}", link)),
-                Err(e) => ctx.send_channel(&format!("Error extracting: {}", e)),
-            },
+            Ok((body, status)) => {
+                if status.is_success() {
+                    match extract_yt(&body) {
+                        Ok(link) => ctx.send_channel(&format!("https://youtu.be/{}", link)),
+                        Err(e) => ctx.send_channel(&format!("Error extracting: {}", e)),
+                    }
+                } else {
+                    ctx.send_channel(&format!("HTTP status: {}", status))
+                }
+            }
             Err(e) => ctx.send_channel(&format!("Error when yting: {}", e)),
         }
     }
