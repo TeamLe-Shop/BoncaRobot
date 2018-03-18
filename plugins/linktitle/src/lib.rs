@@ -28,7 +28,6 @@ fn get_title(link: &str) -> String {
     } else {
         format!("[{}] {}", status, title)
     }
-    
 }
 
 struct LinkTitlePlugin;

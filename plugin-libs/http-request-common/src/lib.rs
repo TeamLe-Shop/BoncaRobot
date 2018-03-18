@@ -2,9 +2,9 @@ extern crate percent_encoding;
 extern crate reqwest;
 
 use percent_encoding::{utf8_percent_encode, QUERY_ENCODE_SET};
+use reqwest::StatusCode;
 use std::error::Error;
 use std::io::Read;
-use reqwest::StatusCode;
 
 pub fn fetch_string(base: &str, user_query: &str) -> Result<(String, StatusCode), Box<Error>> {
     // "Tame" the user query, percent-encoding '%' and '/'.
@@ -18,5 +18,17 @@ pub fn fetch_string(base: &str, user_query: &str) -> Result<(String, StatusCode)
     let mut resp = reqwest::get(&format!("{}{}", base, encoded_user_query))?;
     let mut content = Vec::new();
     resp.read_to_end(&mut content)?;
-    Ok((String::from_utf8_lossy(&content).into_owned(), resp.status()))
+    Ok((
+        String::from_utf8_lossy(&content).into_owned(),
+        resp.status(),
+    ))
+}
+
+pub fn fetch_string_on_success(base: &str, user_query: &str) -> Result<String, Box<Error>> {
+    let (string, status) = fetch_string(base, user_query)?;
+    if !status.is_success() {
+        Err(status.to_string().into())
+    } else {
+        Ok(string)
+    }
 }

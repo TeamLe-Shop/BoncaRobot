@@ -3,7 +3,7 @@ extern crate json;
 #[macro_use]
 extern crate plugin_api;
 
-use http_request_common::fetch_string;
+use http_request_common::fetch_string_on_success;
 use plugin_api::prelude::*;
 use std::error::Error;
 
@@ -13,7 +13,7 @@ fn wikiencode(query: &str) -> String {
 }
 
 fn query_opensearch(what: &str) -> Result<String, Box<Error>> {
-    fetch_string(
+    fetch_string_on_success(
         "https://en.wikipedia.org/w/api.php?action=opensearch&format=json&search=",
         what,
     )
@@ -23,7 +23,7 @@ fn query_wp(what: &str) -> Result<String, Box<Error>> {
     let base = "https://en.wikipedia.org/w/api.php?format=json\
                 &action=query&prop=extracts&exintro&explaintext\
                 &exchars=385&redirects&titles=";
-    fetch_string(base, &what)
+    fetch_string_on_success(base, &what)
 }
 
 fn process_wp_result(result: Result<String, Box<Error>>, article_name: &str, ctx: Context) {

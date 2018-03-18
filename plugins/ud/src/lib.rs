@@ -10,7 +10,10 @@ use split_whitespace_rest::SplitWhitespace;
 use std::error::Error;
 
 pub fn query(query: &str) -> Result<String, Box<Error>> {
-    http_request_common::fetch_string("http://api.urbandictionary.com/v0/define?term=", query)
+    http_request_common::fetch_string_on_success(
+        "http://api.urbandictionary.com/v0/define?term=",
+        query,
+    )
 }
 
 struct UdPlugin;
