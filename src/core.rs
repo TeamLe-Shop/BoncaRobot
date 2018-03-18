@@ -67,8 +67,8 @@ impl Core {
         }
 
         Self {
-            config: config,
-            plugins: plugins,
+            config,
+            plugins,
             irc_bridge: IrcBridge::new(),
         }
     }

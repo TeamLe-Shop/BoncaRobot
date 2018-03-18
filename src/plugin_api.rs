@@ -38,9 +38,9 @@ impl<'a> Context<'a> {
         sender: &'a hiirc::ChannelUser,
     ) -> Self {
         Self {
-            irc: irc,
-            channel: channel,
-            sender: sender,
+            irc,
+            channel,
+            sender,
         }
     }
     /// Send a message to the channel belonging to this context.
@@ -80,11 +80,7 @@ pub struct PluginMeta {
 impl PluginMeta {
     /// Add a command.
     pub fn command(&mut self, name: &'static str, help: &'static str, fun: CommandFn) {
-        self.commands.push(Command {
-            name: name,
-            help: help,
-            fun: fun,
-        })
+        self.commands.push(Command { name, help, fun })
     }
 }
 
