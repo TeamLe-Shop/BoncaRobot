@@ -49,11 +49,10 @@ impl Plugin for LinkTitlePlugin {
             let url_end = from_url
                 .find(|c: char| c.is_whitespace() || c == '>')
                 .unwrap_or(from_url.len());
-            /*let title = get_title(&from_url[..url_end]);
+            let title = get_title(&from_url[..url_end]);
             if !title.is_empty() {
                 ctx.send_channel(&title);
-            }*/
-            ctx.send_channel(&format!("Extracted link \"{}\" from message", &from_url[..url_end]));
+            }
         });
     }
 }
