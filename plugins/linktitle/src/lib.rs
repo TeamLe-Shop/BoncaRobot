@@ -1,7 +1,10 @@
 extern crate http_request_common;
 #[macro_use]
 extern crate plugin_api;
+extern crate regex;
 extern crate scraper;
+#[macro_use]
+extern crate lazy_static;
 
 use plugin_api::prelude::*;
 
@@ -37,23 +40,16 @@ impl Plugin for LinkTitlePlugin {
         LinkTitlePlugin
     }
     fn channel_msg(&mut self, msg: &str, ctx: Context) {
-        fn with_find_any<F: Fn(usize)>(haystack: &str, needles: &[&str], fun: F) {
-            for needle in needles {
-                if let Some(pos) = haystack.find(needle) {
-                    fun(pos)
-                }
-            }
+        use regex::Regex;
+        lazy_static! {
+            static ref RE: Regex = Regex::new(r#"https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,6}\b([-a-zA-Z0-9@:%_\+.~#?&//=]*)"#).unwrap();
         }
-        with_find_any(msg, &["http:", "https://"], |url_begin| {
-            let from_url = &msg[url_begin..];
-            let url_end = from_url
-                .find(|c: char| c.is_whitespace() || c == '>')
-                .unwrap_or(from_url.len());
-            let title = get_title(&from_url[..url_end]);
+        if let Some(cap) = RE.captures_iter(msg).next() {
+            let title = get_title(&cap[0]);
             if !title.is_empty() {
                 ctx.send_channel(&title);
             }
-        });
+        }
     }
 }
 
