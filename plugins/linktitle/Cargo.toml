@@ -5,6 +5,8 @@ authors = ["Mika Attila <radiantstatue@gmail.com>"]
 
 [dependencies]
 scraper = "*"
+regex = "0.2.10"
+lazy_static = "*"
 
 [dependencies.http-request-common]
 path = "../../plugin-libs/http-request-common"
