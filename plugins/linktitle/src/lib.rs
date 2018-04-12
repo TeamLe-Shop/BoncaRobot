@@ -37,7 +37,14 @@ impl Plugin for LinkTitlePlugin {
         LinkTitlePlugin
     }
     fn channel_msg(&mut self, msg: &str, ctx: Context) {
-        if let Some(url_begin) = msg.find("://") {
+        fn with_find_any<F: Fn(usize)>(haystack: &str, needles: &[&str], fun: F) {
+            for needle in needles {
+                if let Some(pos) = haystack.find(needle) {
+                    fun(pos)
+                }
+            }
+        }
+        with_find_any(msg, &["http:", "https://"], |url_begin| {
             let from_url = &msg[url_begin..];
             let url_end = from_url
                 .find(|c: char| c.is_whitespace() || c == '>')
@@ -46,7 +53,7 @@ impl Plugin for LinkTitlePlugin {
             if !title.is_empty() {
                 ctx.send_channel(&title);
             }
-        }
+        });
     }
 }
 
