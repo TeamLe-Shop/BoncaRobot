@@ -37,7 +37,7 @@ impl Plugin for IsoLangPlugin {
             let (code, name): (String, String) = row.unwrap();
             map.insert(code, name);
         }
-        Self { map: map }
+        Self { map }
     }
     fn register(&self, meta: &mut PluginMeta) {
         meta.command(
