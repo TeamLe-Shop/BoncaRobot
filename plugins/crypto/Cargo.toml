@@ -1,0 +1,22 @@
+[package]
+name = "crypto"
+version = "0.1.0"
+authors = ["Mika Attila <radiantstatue@gmail.com>"]
+
+[dependencies.boncarobot]
+path = "../.."
+default-features = false
+
+[dependencies]
+json = "0.11"
+
+[dependencies.http-request-common]
+path = "../../plugin-libs/http-request-common"
+
+[lib]
+crate-type = ["dylib"]
+# This is important, makes it so that the lib is compiled with
+# rustc -C prefer-dynamic, which is required for
+# things like freeing something in the host that was allocated
+# in the plugin
+plugin = true
