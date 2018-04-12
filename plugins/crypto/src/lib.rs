@@ -28,10 +28,11 @@ impl CryptoPlugin {
         };
         for entry in json.members() {
             if entry["id"] == arg {
-                let price_usd = match entry["price_usd"].as_f64() {
+                let price_usd_obj = &entry["price_usd"];
+                let price_usd = match price_usd_obj.as_f64() {
                     Some(price) => price,
                     None => {
-                        ctx.send_channel("It doesn't have a price. Ok.");
+                        ctx.send_channel(&format!("It's apparently {:?}", price_usd_obj));
                         return;
                     }
                 };
