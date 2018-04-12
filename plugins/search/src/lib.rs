@@ -31,29 +31,22 @@ pub fn parse_first_result(body: &str) -> Result<String, Box<Error>> {
     use scraper::{Html, Selector};
 
     let html = Html::parse_document(body);
-    let sel = Selector::parse("h3.r").unwrap();
-    let mut h3s = html.select(&sel);
-    loop {
-        let h3 = match h3s.next() {
-            Some(h3) => h3,
-            None => return Ok("Your Google-Fu fails you.".into()),
-        };
-        let sel = Selector::parse("a").unwrap();
-        // Fucking bullshit instant answer boxes. Can't be bothered to parse them.
-        // Just skip to next h3.r result.
-        let a = match h3.select(&sel).next() {
-            Some(a) => a,
-            None => continue,
-        };
-        let href = a.value()
-            .attr("href")
-            .ok_or("<a> should have a href, but it doesn't")?;
-        let href = url::percent_encoding::percent_decode(href.as_bytes()).decode_utf8()?;
-        if href.starts_with("/search?q=") || href.contains("books.google.hu") {
-            continue;
-        }
-        return Ok(parse_href(&href)?.to_owned());
-    }
+    let sel = Selector::parse("div.b_algoheader").unwrap();
+    let mut results = html.select(&sel);
+    let result = match results.next() {
+        Some(result) => result,
+        None => return Ok("Your Bing-Fu fails you.".into()),
+    };
+    let sel = Selector::parse("a").unwrap();
+    let a = match result.select(&sel).next() {
+        Some(a) => a,
+        None => return Err("What the shit. No link in the result.".into()),
+    };
+    let href = a.value()
+        .attr("href")
+        .ok_or("<a> should have a href, but it doesn't")?;
+    let href = url::percent_encoding::percent_decode(href.as_bytes()).decode_utf8()?;
+    Ok(parse_href(&href)?.to_owned())
 }
 
 struct SearchPlugin;
@@ -64,7 +57,7 @@ impl SearchPlugin {
             ctx.send_channel("You need to search for something bro.");
             return;
         }
-        match fetch_string("http://www.google.com/search?q=", arg) {
+        match fetch_string("https://www.bing.com/search?q=", arg) {
             Ok((body, status)) => {
                 if status.is_success() {
                     match parse_first_result(&body) {
@@ -80,7 +73,7 @@ impl SearchPlugin {
                 }
             }
             Err(e) => {
-                ctx.send_channel(&format!("Error when googuring: {}", e));
+                ctx.send_channel(&format!("Error when searching: {}", e));
             }
         }
     }
@@ -119,7 +112,7 @@ impl Plugin for SearchPlugin {
         SearchPlugin
     }
     fn register(&self, meta: &mut PluginMeta) {
-        meta.command("search", "Googuru search", Self::search);
+        meta.command("search", "Bing search", Self::search);
         meta.command("ytsearch", "Jewtube search", Self::ytsearch);
     }
 }
