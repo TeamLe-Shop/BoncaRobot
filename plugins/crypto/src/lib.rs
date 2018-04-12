@@ -29,10 +29,10 @@ impl CryptoPlugin {
         for entry in json.members() {
             if entry["id"] == arg {
                 let price_usd_obj = &entry["price_usd"];
-                let price_usd = match price_usd_obj.as_f64() {
-                    Some(price) => price,
-                    None => {
-                        ctx.send_channel(&format!("It's apparently {:?}", price_usd_obj));
+                let price_usd: f64 = match price_usd_obj.as_str().unwrap_or("").parse() {
+                    Ok(price) => price,
+                    Err(_) => {
+                        ctx.send_channel("Failed parsing price. Fuck it.");
                         return;
                     }
                 };
