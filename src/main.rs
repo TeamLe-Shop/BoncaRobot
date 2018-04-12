@@ -15,8 +15,8 @@ extern crate split_whitespace_rest;
 extern crate toml;
 
 mod config;
-mod ipc_control;
 mod core;
+mod ipc_control;
 mod plugin_container;
 
 use core::SharedCore;

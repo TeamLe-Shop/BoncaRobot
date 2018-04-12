@@ -1,10 +1,10 @@
 extern crate rustyline;
 extern crate scaproust;
 
-use rustyline::Editor;
 use rustyline::error::ReadlineError;
-use scaproust::{Ipc, SessionBuilder};
+use rustyline::Editor;
 use scaproust::proto::pair::Pair;
+use scaproust::{Ipc, SessionBuilder};
 
 fn main() {
     let command_str = std::env::args().skip(1).collect::<Vec<_>>().join(" ");

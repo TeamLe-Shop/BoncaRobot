@@ -2,10 +2,10 @@
 
 use config::{self, Config};
 use core::Core;
-use scaproust::{Ipc, SessionBuilder, Socket};
 use scaproust::proto::pair::Pair;
-use std::{thread, time};
+use scaproust::{Ipc, SessionBuilder, Socket};
 use std::sync::Mutex;
+use std::{thread, time};
 
 /// Listens for IPC messages and handle them.
 pub(crate) fn listen(core: &Mutex<Core>, config: &Mutex<Config>) {

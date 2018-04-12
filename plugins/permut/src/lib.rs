@@ -124,7 +124,9 @@ impl Permutations {
 fn test_single_item() {
     let mut perms = permutations("f");
     macro_rules! assert_next_is {
-        ($expected:expr) => { assert_eq!(perms.next().as_ref().map(|s| &**s), $expected); }
+        ($expected:expr) => {
+            assert_eq!(perms.next().as_ref().map(|s| &**s), $expected);
+        };
     }
     assert_next_is!(Some("f"));
     assert_next_is!(None);
@@ -134,7 +136,9 @@ fn test_single_item() {
 fn test_1234() {
     let mut perms = permutations("4213");
     macro_rules! assert_next_is {
-        ($expected:expr) => { assert_eq!(perms.next().as_ref().map(|s| &**s), $expected); }
+        ($expected:expr) => {
+            assert_eq!(perms.next().as_ref().map(|s| &**s), $expected);
+        };
     }
     assert_next_is!(Some("1234"));
     assert_next_is!(Some("1243"));

@@ -109,5 +109,5 @@ macro_rules! plugin_export {
         pub fn init() -> Arc<Mutex<Plugin>> {
             Arc::new(Mutex::new($plugin::new()))
         }
-    }
+    };
 }
