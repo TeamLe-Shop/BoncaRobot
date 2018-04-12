@@ -28,7 +28,14 @@ impl CryptoPlugin {
         };
         for entry in json.members() {
             if entry["id"] == arg {
-                ctx.send_channel("Wow, it exists, ok");
+                let price_usd = match entry["price_usd"].as_f64() {
+                    Some(price) => price,
+                    None => {
+                        ctx.send_channel("It doesn't have a price. Ok.");
+                        return;
+                    }
+                };
+                ctx.send_channel(&format!("A {} is worth {} US dollars.", arg, price_usd));
                 return;
             }
         }

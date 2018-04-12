@@ -111,7 +111,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "crypto"
+name = "cryptoplugin"
 version = "0.1.0"
 dependencies = [
  "boncarobot 0.1.0",
