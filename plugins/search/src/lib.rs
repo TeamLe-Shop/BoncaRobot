@@ -2,11 +2,13 @@ extern crate http_request_common;
 #[macro_use]
 extern crate plugin_api;
 extern crate scraper;
+extern crate titlefetch;
 extern crate url;
 
 use http_request_common::fetch_string;
 use plugin_api::prelude::*;
 use std::error::Error;
+use titlefetch::get_title;
 
 const URLQ: &str = "/url?q=";
 
@@ -63,6 +65,8 @@ impl SearchPlugin {
                     match parse_first_result(&body) {
                         Ok(result) => {
                             ctx.send_channel(&result);
+                            let title = get_title(&result);
+                            ctx.send_channel(&title);
                         }
                         Err(e) => {
                             ctx.send_channel(&format!("Error: {}", e));
@@ -86,7 +90,12 @@ impl SearchPlugin {
             Ok((body, status)) => {
                 if status.is_success() {
                     match extract_yt(&body) {
-                        Ok(link) => ctx.send_channel(&format!("https://youtu.be/{}", link)),
+                        Ok(link) => {
+                            let ytlink = format!("https://youtu.be/{}", link);
+                            ctx.send_channel(&ytlink);
+                            let title = get_title(&ytlink);
+                            ctx.send_channel(&title);
+                        }
                         Err(e) => ctx.send_channel(&format!("Error extracting: {}", e)),
                     }
                 } else {

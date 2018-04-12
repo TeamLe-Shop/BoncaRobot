@@ -444,10 +444,9 @@ name = "linktitle"
 version = "0.1.0"
 dependencies = [
  "boncarobot 0.1.0",
- "http-request-common 0.1.0",
  "lazy_static 1.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "regex 0.2.10 (registry+https://github.com/rust-lang/crates.io-index)",
- "scraper 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "titlefetch 0.1.0",
 ]
 
 [[package]]
@@ -890,6 +889,7 @@ dependencies = [
  "boncarobot 0.1.0",
  "http-request-common 0.1.0",
  "scraper 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "titlefetch 0.1.0",
  "url 1.6.0 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
@@ -1112,6 +1112,14 @@ dependencies = [
  "libc 0.2.36 (registry+https://github.com/rust-lang/crates.io-index)",
  "redox_syscall 0.1.37 (registry+https://github.com/rust-lang/crates.io-index)",
  "winapi 0.3.4 (registry+https://github.com/rust-lang/crates.io-index)",
+]
+
+[[package]]
+name = "titlefetch"
+version = "0.1.0"
+dependencies = [
+ "http-request-common 0.1.0",
+ "scraper 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]

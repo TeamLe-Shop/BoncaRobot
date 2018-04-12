@@ -1,0 +1,10 @@
+[package]
+name = "titlefetch"
+version = "0.1.0"
+authors = ["Mika Attila <radiantstatue@gmail.com>"]
+
+[dependencies]
+scraper = "*"
+
+[dependencies.http-request-common]
+path = "../../plugin-libs/http-request-common"

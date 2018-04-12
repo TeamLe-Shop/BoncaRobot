@@ -14,6 +14,9 @@ path = "../../plugin-libs/http-request-common"
 path ="../../"
 default-features = false
 
+[dependencies.titlefetch]
+path = "../../plugin-libs/titlefetch"
+
 [lib]
 crate-type = ["dylib"]
 # This is important, makes it so that the lib is compiled with
