@@ -10,25 +10,6 @@ use plugin_api::prelude::*;
 use std::error::Error;
 use titlefetch::get_title;
 
-const URLQ: &str = "/url?q=";
-
-fn parse_urlq(urlq: &str) -> Result<&str, Box<Error>> {
-    let begin = URLQ.len();
-    let end = begin
-        + urlq[begin..]
-            .find("&sa=")
-            .ok_or("Expected &sa= shit, but didn't find it.")?;
-    Ok(&urlq[begin..end])
-}
-
-fn parse_href(href: &str) -> Result<&str, Box<Error>> {
-    if href.starts_with(URLQ) {
-        parse_urlq(href)
-    } else {
-        Ok(href)
-    }
-}
-
 pub fn parse_first_result(body: &str) -> Result<String, Box<Error>> {
     use scraper::{Html, Selector};
 
@@ -47,8 +28,7 @@ pub fn parse_first_result(body: &str) -> Result<String, Box<Error>> {
     let href = a.value()
         .attr("href")
         .ok_or("<a> should have a href, but it doesn't")?;
-    let href = url::percent_encoding::percent_decode(href.as_bytes()).decode_utf8()?;
-    Ok(parse_href(&href)?.to_owned())
+    Ok(href.to_owned())
 }
 
 struct SearchPlugin;
