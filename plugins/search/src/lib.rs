@@ -14,7 +14,7 @@ pub fn parse_first_result(body: &str) -> Result<String, Box<Error>> {
     use scraper::{Html, Selector};
 
     let html = Html::parse_document(body);
-    let sel = Selector::parse("div.b_algoheader").unwrap();
+    let sel = Selector::parse("li.b_algo").unwrap();
     let mut results = html.select(&sel);
     let result = match results.next() {
         Some(result) => result,
