@@ -102,7 +102,12 @@ fn ud_lookup_matching(arg: &str, needle: &str, ctx: Context, invert: bool) {
         let mut itered_through = 0;
         for v in entries.members() {
             if let Some(def) = v["definition"].as_str() {
-                let matches = def.to_lowercase().contains(&needle.to_lowercase());
+                let mut matches = def.to_lowercase().contains(&needle.to_lowercase());
+                if !matches {
+                    if let Some(example) = v["example"].as_str() {
+                        matches = example.to_lowercase().contains(&needle.to_lowercase());
+                    }
+                }
                 if (!invert && matches) || (invert && !matches) {
                     display_def(def, v["example"].as_str(), arg, ctx);
                     return;
