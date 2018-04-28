@@ -10,7 +10,7 @@ use plugin_api::prelude::*;
 use std::error::Error;
 use titlefetch::get_title;
 
-pub fn parse_first_result(body: &str) -> Result<String, Box<Error>> {
+pub fn parse_first_result(body: &str) -> Result<Option<String>, Box<Error>> {
     use scraper::{Html, Selector};
 
     let html = Html::parse_document(body);
@@ -18,7 +18,7 @@ pub fn parse_first_result(body: &str) -> Result<String, Box<Error>> {
     let mut results = html.select(&sel);
     let result = match results.next() {
         Some(result) => result,
-        None => return Ok("Your Bing-Fu fails you.".into()),
+        None => return Ok(None),
     };
     let sel = Selector::parse("a").unwrap();
     let a = match result.select(&sel).next() {
@@ -28,7 +28,7 @@ pub fn parse_first_result(body: &str) -> Result<String, Box<Error>> {
     let href = a.value()
         .attr("href")
         .ok_or("<a> should have a href, but it doesn't")?;
-    Ok(href.to_owned())
+    Ok(Some(href.to_owned()))
 }
 
 struct SearchPlugin;
@@ -43,10 +43,13 @@ impl SearchPlugin {
             Ok((body, status)) => {
                 if status.is_success() {
                     match parse_first_result(&body) {
-                        Ok(result) => {
+                        Ok(Some(result)) => {
                             ctx.send_channel(&result);
                             let title = get_title(&result);
                             ctx.send_channel(&title);
+                        }
+                        Ok(None) => {
+                            ctx.send_channel("BING-FU MOTHERFUCKER, DO YOU KNOW IT?");
                         }
                         Err(e) => {
                             ctx.send_channel(&format!("Error: {}", e));
