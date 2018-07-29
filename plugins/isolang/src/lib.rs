@@ -12,7 +12,8 @@ struct IsoLangPlugin {
 impl IsoLangPlugin {
     fn isolang(this: &mut Plugin, arg: &str, ctx: Context) {
         let this: &mut Self = this.downcast_mut().unwrap();
-        let response = this.map
+        let response = this
+            .map
             .get(arg)
             .cloned()
             .or_else(|| {

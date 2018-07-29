@@ -25,7 +25,8 @@ pub fn parse_first_result(body: &str) -> Result<Option<String>, Box<Error>> {
         Some(a) => a,
         None => return Err("What the shit. No link in the result.".into()),
     };
-    let href = a.value()
+    let href = a
+        .value()
         .attr("href")
         .ok_or("<a> should have a href, but it doesn't")?;
     Ok(Some(href.to_owned()))
