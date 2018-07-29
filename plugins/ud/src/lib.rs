@@ -87,7 +87,12 @@ fn udlookup(arg: &str, index: usize, ctx: Context) {
     with_json(arg, ctx, |json| {
         let entry = &json["list"][index];
         match entry["definition"].as_str() {
-            Some(def) => display_def(def, entry["example"].as_str(), arg, ctx),
+            Some(def) => display_def(
+                &format!("{}: {}", entry["word"].as_str().unwrap_or("?"), def),
+                entry["example"].as_str(),
+                arg,
+                ctx,
+            ),
             None => {
                 ctx.send_channel("ENGLISH, MOTHERFUCKER.");
                 return;
@@ -109,7 +114,12 @@ fn ud_lookup_matching(arg: &str, needle: &str, ctx: Context, invert: bool) {
                     }
                 }
                 if (!invert && matches) || (invert && !matches) {
-                    display_def(def, v["example"].as_str(), arg, ctx);
+                    display_def(
+                        &format!("{}: {}", v["word"].as_str().unwrap_or("?"), def),
+                        v["example"].as_str(),
+                        arg,
+                        ctx,
+                    );
                     return;
                 }
             }
