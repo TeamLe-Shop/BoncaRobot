@@ -1,4 +1,8 @@
 [[package]]
+name = "aarena"
+version = "0.1.0"
+
+[[package]]
 name = "adler32"
 version = "1.0.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -9,6 +13,14 @@ version = "0.6.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "memchr 2.0.1 (registry+https://github.com/rust-lang/crates.io-index)",
+]
+
+[[package]]
+name = "asspull_arena"
+version = "0.1.0"
+dependencies = [
+ "aarena 0.1.0",
+ "boncarobot 0.1.0",
 ]
 
 [[package]]
