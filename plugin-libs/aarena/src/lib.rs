@@ -31,15 +31,27 @@ impl Game {
                 winrar: None,
             };
         }
-        let commands = filter_commands(msg);
+        let commands = match filter_commands(msg) {
+            Ok(commands) => commands,
+            Err(()) => {
+                return Response {
+                    lines: vec!["You should mind your square brackets, young one.".to_string()],
+                    winrar: None,
+                }
+            }
+        };
+        let mut lines = Vec::new();
+        lines.push(format!("{:?}", commands));
+        let intentions = analyze_intentions(commands);
+        lines.push(format!("{:?}", intentions));
         Response {
-            lines: vec![format!("{:?}", commands)],
+            lines,
             winrar: None,
         }
     }
 }
 
-fn filter_commands(mut msg: &str) -> Result<Vec<String>, ()> {
+fn filter_commands(mut msg: &str) -> Result<Vec<&str>, ()> {
     let mut commands = Vec::new();
     loop {
         let op_br = match msg.find('[') {
@@ -51,13 +63,85 @@ fn filter_commands(mut msg: &str) -> Result<Vec<String>, ()> {
             Some(pos) => pos,
             None => return Err(()),
         };
-        commands.push(msg[..clos_br].to_string());
+        commands.push(&msg[..clos_br]);
         msg = &msg[clos_br + 1..]
     }
 }
 
-/// Interpreter state machine
-enum IState {}
+fn analyze_intentions<'a, I: IntoIterator<Item = &'a str>>(
+    commands: I,
+) -> Result<Vec<Intention>, String> {
+    let mut intentions = Vec::new();
+    let mut sm = Aism::new(commands.into_iter());
+    loop {
+        match sm.consume() {
+            ConsumeResult::Intention(intention) => {
+                intentions.push(intention);
+            }
+            ConsumeResult::Error(e) => return Err(e),
+            ConsumeResult::End => break,
+            ConsumeResult::More => {}
+        }
+    }
+    Ok(intentions)
+}
+
+/// Analyze Intentions State Machine
+struct Aism<'a, I: Iterator<Item = &'a str>> {
+    state: AismState,
+    commands: I,
+}
+
+impl<'a, I: Iterator<Item = &'a str>> Aism<'a, I> {
+    fn new(commands: I) -> Self {
+        Self {
+            state: AismState::Fresh,
+            commands,
+        }
+    }
+    fn consume(&mut self) -> ConsumeResult {
+        match self.state {
+            AismState::Fresh => match self.commands.next() {
+                Some(cmd) => match cmd {
+                    "summon" => {
+                        self.state = AismState::Summon;
+                        ConsumeResult::More
+                    }
+                    _ => ConsumeResult::Error("EXCUSE ME? WHAT?".to_string()),
+                },
+                None => ConsumeResult::End,
+            },
+            AismState::Summon => match self.commands.next() {
+                Some(name) => {
+                    self.state = AismState::Fresh;
+                    ConsumeResult::Intention(Intention::Summon {
+                        who: name.to_string(),
+                    })
+                }
+                None => ConsumeResult::Error("SUMMON WHO? WHO?".to_string()),
+            },
+        }
+    }
+}
+
+enum ConsumeResult {
+    Intention(Intention),
+    Error(String),
+    End,
+    More,
+}
+
+enum AismState {
+    /// Nothing is assumed yet. The default state.
+    Fresh,
+    /// Summon something
+    Summon,
+}
+
+#[derive(Debug)]
+enum Intention {
+    Summon { who: String },
+}
 
 /// A response to whatever is running the battle about the state of the battle,
 /// and messages to display.
