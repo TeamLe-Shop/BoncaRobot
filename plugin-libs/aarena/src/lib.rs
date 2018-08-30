@@ -19,6 +19,8 @@ struct MonsterDef {
     ad: u16,
     /// Max hitpoints
     hp: u16,
+    /// Only the owner can summon it
+    owner: Pid,
 }
 
 impl Game {
@@ -86,7 +88,19 @@ impl Game {
                 Intention::Summon { who } => {
                     match self.monster_defs.get(&who) {
                         Some(def) => {
-                            lines.push(format!("{} summoned {}.", self.current_player().name, who))
+                            if def.owner == self.turn {
+                                lines.push(format!(
+                                    "{} summoned {}.",
+                                    self.current_player().name,
+                                    who
+                                ));
+                            } else {
+                                lines.push(format!(
+                                    "Hey, you can't use that! It belongs to {}",
+                                    self.player_by_pid(self.turn.other()).name
+                                ));
+                                break;
+                            }
                         }
                         None => {
                             lines.push(format!(
@@ -100,7 +114,14 @@ impl Game {
                 }
                 Intention::Introduce { name, ad, hp } => {
                     lines.push("Ok.".to_owned());
-                    self.monster_defs.insert(name, MonsterDef { ad, hp });
+                    self.monster_defs.insert(
+                        name,
+                        MonsterDef {
+                            ad,
+                            hp,
+                            owner: self.turn,
+                        },
+                    );
                 }
                 Intention::EndTurn => {
                     if self.round == 1 {
