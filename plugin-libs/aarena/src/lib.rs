@@ -3,7 +3,12 @@
 pub struct Game {
     pub p1: Player,
     pub p2: Player,
-    turn: Pid,
+    /// Whose turn it is
+    pub turn: Pid,
+    /// Moves left this turn. Starts at 3, except in round 1, which is summoner round.
+    moves_left: u8,
+    /// Number of the current round. Starts at 1.
+    round: u32,
 }
 
 impl Game {
@@ -12,6 +17,8 @@ impl Game {
             p1: Player::new(p1name),
             p2: Player::new(p2name),
             turn: Pid::P1,
+            moves_left: 1,
+            round: 1,
         }
     }
     /// Returns the player whose turn it isnow
@@ -28,12 +35,6 @@ impl Game {
     ///
     /// This is the MAIN SHOW.
     pub fn interpret(&mut self, msg: &str, pid: Pid) -> Response {
-        if pid != self.turn {
-            return Response {
-                lines: vec!["It's not your turn.".to_string()],
-                winrar: None,
-            };
-        }
         let commands = match filter_commands(msg) {
             Ok(commands) => commands,
             Err(()) => {
@@ -43,6 +44,19 @@ impl Game {
                 }
             }
         };
+        // Ignore messages that don't contain commands
+        if commands.is_empty() {
+            return Response {
+                lines: vec![],
+                winrar: None,
+            };
+        }
+        if pid != self.turn {
+            return Response {
+                lines: vec!["It's not your turn.".to_string()],
+                winrar: None,
+            };
+        }
         let mut lines = Vec::new();
         //lines.push(format!("{:?}", commands));
         let intentions = match analyze_intentions(commands) {
@@ -55,19 +69,49 @@ impl Game {
             }
         };
         //lines.push(format!("{:?}", intentions));
+        let mut endturn = false;
         for intention in intentions {
             match intention {
                 Intention::Summon { who } => {
-                    lines.push(format!("{} summoned {}.", self.current_player().name, who))
+                    lines.push(format!("{} summoned {}.", self.current_player().name, who));
+                    self.moves_left -= 1;
                 }
                 Intention::EndTurn => {
-                    self.turn = self.turn.other();
-                    lines.push(format!(
-                        "Now it's your turn, {}!",
-                        self.current_player().name
-                    ));
+                    if self.round == 1 {
+                        lines.push("YOU GOTTA SUMMON A MONSTER.".to_string());
+                        break;
+                    }
+                    endturn = true;
+                    break;
                 }
             }
+            if self.moves_left == 0 {
+                if self.round == 1 {
+                    lines.push(format!(
+                        "{} finished his first summoning.",
+                        self.current_player().name
+                    ));
+                } else {
+                    lines.push(format!("{} is out of moves.", self.current_player().name));
+                }
+                endturn = true;
+                break;
+            }
+        }
+        if endturn {
+            if self.turn == Pid::P2 {
+                self.round += 1;
+            }
+            if self.round == 1 {
+                self.moves_left = 1;
+            } else {
+                self.moves_left = 3;
+            }
+            self.turn = self.turn.other();
+            lines.push(format!(
+                "Now it's your turn, {}!",
+                self.current_player().name
+            ));
         }
         Response {
             lines,

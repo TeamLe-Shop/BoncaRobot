@@ -1,12 +1,10 @@
 extern crate aarena;
 extern crate rustyline;
-extern crate split_whitespace_rest;
 
 use rustyline::error::ReadlineError;
 use rustyline::Editor;
 
-use aarena::{Game, Pid};
-use split_whitespace_rest::SplitWhitespace;
+use aarena::Game;
 use std::env;
 
 fn main() {
@@ -18,14 +16,8 @@ fn main() {
     loop {
         match editor.readline(&format!("[{}]> ", game.current_player().name)) {
             Ok(line) => {
-                let mut sw = SplitWhitespace::new(&line);
-                let pstring = sw.next().expect("player");
-                let p = match pstring.trim() {
-                    "p1" => Pid::P1,
-                    "p2" => Pid::P2,
-                    _ => panic!("Wrong player"),
-                };
-                let response = game.interpret(sw.rest_as_slice(), p);
+                let turn = game.turn;
+                let response = game.interpret(&line, turn);
                 for line in &response.lines {
                     println!("{}", line);
                 }

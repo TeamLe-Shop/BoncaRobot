@@ -5,6 +5,3 @@ authors = ["crumblingstatue <radiantstatue@gmail.com>"]
 
 [dependencies]
 rustyline = "*"
-
-[dependencies.split-whitespace-rest]
-git = "https://github.com/crumblingstatue/split-whitespace-rest"
