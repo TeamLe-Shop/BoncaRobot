@@ -12,6 +12,7 @@ pub struct Game {
     /// Number of the current round. Starts at 1.
     round: u32,
     monster_defs: HashMap<String, MonsterDef>,
+    units: HashMap<String, Unit>,
 }
 
 struct MonsterDef {
@@ -23,6 +24,35 @@ struct MonsterDef {
     owner: Pid,
 }
 
+/// A unit that's out on the battlefield
+struct Unit {
+    /// Current attack damage
+    ad: u16,
+    /// Current max hp
+    max_hp: u16,
+    /// Current side of the battlefield
+    side: Pid,
+    /// Current row of the battlefield
+    row: Row,
+}
+
+impl Unit {
+    fn new(def: &MonsterDef, row: Row) -> Self {
+        Self {
+            ad: def.ad,
+            max_hp: def.hp,
+            side: def.owner,
+            row: row,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy)]
+enum Row {
+    Front,
+    Back,
+}
+
 impl Game {
     pub fn new(p1name: String, p2name: String) -> Self {
         Self {
@@ -32,6 +62,7 @@ impl Game {
             moves_left: 1,
             round: 1,
             monster_defs: HashMap::new(),
+            units: HashMap::new(),
         }
     }
     /// Returns the player whose turn it isnow
@@ -85,15 +116,25 @@ impl Game {
         let mut endturn = false;
         for intention in intentions {
             match intention {
-                Intention::Summon { who } => {
+                Intention::Summon { who, row } => {
                     match self.monster_defs.get(&who) {
                         Some(def) => {
                             if def.owner == self.turn {
-                                lines.push(format!(
-                                    "{} summoned {}.",
-                                    self.current_player().name,
-                                    who
-                                ));
+                                use std::collections::hash_map::Entry;
+                                let cpname = self.current_player().name.clone();
+                                match self.units.entry(who.clone()) {
+                                    Entry::Occupied(_) => {
+                                        lines.push(format!("{} is already out.", who));
+                                        break;
+                                    }
+                                    Entry::Vacant(en) => {
+                                        en.insert(Unit::new(def, row));
+                                        lines.push(format!(
+                                            "{} summoned {} to the {:?} row.",
+                                            cpname, who, row
+                                        ));
+                                    }
+                                }
                             } else {
                                 lines.push(format!(
                                     "Hey, you can't use that! It belongs to {}",
@@ -234,12 +275,25 @@ impl<'a, I: Iterator<Item = &'a str>> Aism<'a, I> {
             },
             AismState::Summon => match self.commands.next() {
                 Some(name) => {
+                    self.state = AismState::SummonName(name);
+                    ConsumeResult::More
+                }
+                None => ConsumeResult::Error("SUMMON WHO? WHO?".to_string()),
+            },
+            AismState::SummonName(name) => match self.commands.next() {
+                Some(row) => {
+                    let row = match &row.to_lowercase()[..] {
+                        "front" => Row::Front,
+                        "back" => Row::Back,
+                        _ => return ConsumeResult::Error("Only front or back.".to_string()),
+                    };
                     self.state = AismState::Fresh;
                     ConsumeResult::Intention(Intention::Summon {
                         who: name.to_string(),
+                        row,
                     })
                 }
-                None => ConsumeResult::Error("SUMMON WHO? WHO?".to_string()),
+                None => ConsumeResult::Error("SUMMON TO WHICH ROW?".to_string()),
             },
             AismState::Introduce => match self.commands.next() {
                 Some(name) => {
@@ -358,6 +412,8 @@ enum AismState<'a> {
     Fresh,
     /// Summon something
     Summon,
+    /// Summon a monster with a name...
+    SummonName(&'a str),
     /// Introduce a monster ...
     Introduce,
     /// Introduce a monster with name x, ...
@@ -368,7 +424,7 @@ enum AismState<'a> {
 
 #[derive(Debug)]
 enum Intention {
-    Summon { who: String },
+    Summon { who: String, row: Row },
     EndTurn,
     Introduce { name: String, hp: u16, ad: u16 },
 }
