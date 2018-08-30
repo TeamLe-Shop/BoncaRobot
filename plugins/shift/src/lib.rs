@@ -65,8 +65,7 @@ fn driver<T: Fn(&[u8], char) -> Option<char>>(txt: &str, f: T) -> String {
                 .or_else(|| f(b"ZXCVBNM", c))
                 .or_else(|| f(b"1234567890", c))
                 .unwrap_or(c)
-        })
-        .collect()
+        }).collect()
 }
 
 fn shl(txt: &str) -> String {

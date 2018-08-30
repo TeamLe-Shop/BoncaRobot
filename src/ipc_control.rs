@@ -16,8 +16,7 @@ pub(crate) fn listen(core: &Mutex<Core>, config: &Mutex<Config>) {
         .bind(&format!(
             "ipc://{}/boncarobot.sock",
             tmpdir.to_str().unwrap()
-        ))
-        .unwrap();
+        )).unwrap();
 
     let mut quit_requested = false;
 

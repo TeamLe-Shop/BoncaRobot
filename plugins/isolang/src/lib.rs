@@ -23,8 +23,7 @@ impl IsoLangPlugin {
                     }
                 }
                 None
-            })
-            .unwrap_or_else(|| "ISO MOTHERFUCKER, DO YOU SPEAK IT?".into());
+            }).unwrap_or_else(|| "ISO MOTHERFUCKER, DO YOU SPEAK IT?".into());
         ctx.send_channel(&format!("{}: {}", ctx.sender.nickname(), response));
     }
 }
