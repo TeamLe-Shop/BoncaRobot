@@ -1,5 +1,7 @@
 //! A battle of wits between two superintelligences
 
+use std::collections::HashMap;
+
 pub struct Game {
     pub p1: Player,
     pub p2: Player,
@@ -9,6 +11,14 @@ pub struct Game {
     moves_left: u8,
     /// Number of the current round. Starts at 1.
     round: u32,
+    monster_defs: HashMap<String, MonsterDef>,
+}
+
+struct MonsterDef {
+    /// Attack damage of normal attack
+    ad: u16,
+    /// Max hitpoints
+    hp: u16,
 }
 
 impl Game {
@@ -19,6 +29,7 @@ impl Game {
             turn: Pid::P1,
             moves_left: 1,
             round: 1,
+            monster_defs: HashMap::new(),
         }
     }
     /// Returns the player whose turn it isnow
@@ -73,8 +84,23 @@ impl Game {
         for intention in intentions {
             match intention {
                 Intention::Summon { who } => {
-                    lines.push(format!("{} summoned {}.", self.current_player().name, who));
+                    match self.monster_defs.get(&who) {
+                        Some(def) => {
+                            lines.push(format!("{} summoned {}.", self.current_player().name, who))
+                        }
+                        None => {
+                            lines.push(format!(
+                                "{} Doesn't exist. It's only in your imagination.",
+                                who
+                            ));
+                            break;
+                        }
+                    }
                     self.moves_left -= 1;
+                }
+                Intention::Introduce { name, ad, hp } => {
+                    lines.push("Ok.".to_owned());
+                    self.monster_defs.insert(name, MonsterDef { ad, hp });
                 }
                 Intention::EndTurn => {
                     if self.round == 1 {
@@ -157,7 +183,7 @@ fn analyze_intentions<'a, I: IntoIterator<Item = &'a str>>(
 
 /// Analyze Intentions State Machine
 struct Aism<'a, I: Iterator<Item = &'a str>> {
-    state: AismState,
+    state: AismState<'a>,
     commands: I,
 }
 
@@ -176,6 +202,10 @@ impl<'a, I: Iterator<Item = &'a str>> Aism<'a, I> {
                         self.state = AismState::Summon;
                         ConsumeResult::More
                     }
+                    "introduce" | "introducing" => {
+                        self.state = AismState::Introduce;
+                        ConsumeResult::More
+                    }
                     "end" => ConsumeResult::Intention(Intention::EndTurn),
                     _ => ConsumeResult::Error("EXCUSE ME? WHAT?".to_string()),
                 },
@@ -190,8 +220,109 @@ impl<'a, I: Iterator<Item = &'a str>> Aism<'a, I> {
                 }
                 None => ConsumeResult::Error("SUMMON WHO? WHO?".to_string()),
             },
+            AismState::Introduce => match self.commands.next() {
+                Some(name) => {
+                    self.state = AismState::IntroduceName(name);
+                    ConsumeResult::More
+                }
+                None => ConsumeResult::Error("Introduce who?".to_string()),
+            },
+            AismState::IntroduceName(name) => match self.commands.next() {
+                Some(ad_or_hp) => {
+                    let def = match parse_pointdef(ad_or_hp) {
+                        Ok(def) => def,
+                        Err(e) => return ConsumeResult::Error(e),
+                    };
+                    match def.kind {
+                        PointKind::Ad => {
+                            self.state = AismState::IntroduceNameAd(name, def.value);
+                            ConsumeResult::More
+                        }
+                        PointKind::Hp => {
+                            self.state = AismState::IntroduceNameHp(name, def.value);
+                            ConsumeResult::More
+                        }
+                    }
+                }
+                None => ConsumeResult::Error("Need AD and HP.".to_string()),
+            },
+            AismState::IntroduceNameHp(name, hp) => match self.commands.next() {
+                Some(ad_or_hp) => {
+                    let def = match parse_pointdef(ad_or_hp) {
+                        Ok(def) => def,
+                        Err(e) => return ConsumeResult::Error(e),
+                    };
+                    match def.kind {
+                        PointKind::Ad => {
+                            self.state = AismState::Fresh;
+                            ConsumeResult::Intention(Intention::Introduce {
+                                name: name.to_owned(),
+                                hp,
+                                ad: def.value,
+                            })
+                        }
+                        PointKind::Hp => {
+                            ConsumeResult::Error("You gave Hp twice. Dummy.".to_string())
+                        }
+                    }
+                }
+                None => ConsumeResult::Error("Next time maybe give Ad too".to_string()),
+            },
+            AismState::IntroduceNameAd(name, ad) => match self.commands.next() {
+                Some(ad_or_hp) => {
+                    let def = match parse_pointdef(ad_or_hp) {
+                        Ok(def) => def,
+                        Err(e) => return ConsumeResult::Error(e),
+                    };
+                    match def.kind {
+                        PointKind::Hp => {
+                            self.state = AismState::Fresh;
+                            ConsumeResult::Intention(Intention::Introduce {
+                                name: name.to_owned(),
+                                hp: def.value,
+                                ad,
+                            })
+                        }
+                        PointKind::Ad => {
+                            ConsumeResult::Error("You gave Ad twice. Dummy.".to_string())
+                        }
+                    }
+                }
+                None => ConsumeResult::Error("Next time maybe give Hp too".to_string()),
+            },
         }
     }
+}
+
+fn parse_pointdef(text: &str) -> Result<PointDef, String> {
+    let mut split = text.split_whitespace();
+    let value = split
+        .next()
+        .ok_or("csb".to_string())?
+        .trim()
+        .parse::<u16>()
+        .map_err(|e| e.to_string())?;
+    match &split.next().ok_or("csb".to_string())?.to_lowercase()[..] {
+        "ad" => Ok(PointDef {
+            value,
+            kind: PointKind::Ad,
+        }),
+        "hp" => Ok(PointDef {
+            value,
+            kind: PointKind::Hp,
+        }),
+        _ => Err("AD OR HP. THAT'S IT. STOP FOOLING AROUND.".to_string()),
+    }
+}
+
+struct PointDef {
+    value: u16,
+    kind: PointKind,
+}
+
+enum PointKind {
+    Ad,
+    Hp,
 }
 
 enum ConsumeResult {
@@ -201,17 +332,24 @@ enum ConsumeResult {
     More,
 }
 
-enum AismState {
+enum AismState<'a> {
     /// Nothing is assumed yet. The default state.
     Fresh,
     /// Summon something
     Summon,
+    /// Introduce a monster ...
+    Introduce,
+    /// Introduce a monster with name x, ...
+    IntroduceName(&'a str),
+    IntroduceNameAd(&'a str, u16),
+    IntroduceNameHp(&'a str, u16),
 }
 
 #[derive(Debug)]
 enum Intention {
     Summon { who: String },
     EndTurn,
+    Introduce { name: String, hp: u16, ad: u16 },
 }
 
 /// A response to whatever is running the battle about the state of the battle,
