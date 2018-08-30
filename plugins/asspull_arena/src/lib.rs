@@ -3,7 +3,7 @@ extern crate plugin_api;
 
 extern crate aarena;
 
-use aarena::Game;
+use aarena::{Game, Pid};
 use plugin_api::prelude::*;
 
 enum AssPullState {
@@ -155,6 +155,29 @@ impl Plugin for AssPull {
             Self::accept_challenge,
         );
         meta.command("chicken", "Chicken out", Self::chicken);
+    }
+    fn channel_msg(&mut self, msg: &str, ctx: Context) {
+        match self.state {
+            AssPullState::Game(ref mut g) => {
+                let nick = ctx.sender.nickname();
+                let mut pid = None;
+                if *nick == *g.p1.name {
+                    pid = Some(Pid::P1);
+                } else if *nick == *g.p2.name {
+                    pid = Some(Pid::P2);
+                }
+                if let Some(pid) = pid {
+                    let response = g.interpret(msg, pid);
+                    for line in &response.lines {
+                        ctx.send_channel(line);
+                    }
+                    if let Some(winrar) = response.winrar {
+                        ctx.send_channel(&format!("{} is the winrar. Woohoo.", g.player_by_pid(winrar).name))
+                    }
+                }
+            }
+            _ => {}
+        }
     }
 }
 

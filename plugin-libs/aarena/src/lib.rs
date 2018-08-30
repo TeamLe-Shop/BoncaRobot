@@ -16,7 +16,10 @@ impl Game {
     }
     /// Returns the player whose turn it isnow
     pub fn current_player(&self) -> &Player {
-        match self.turn {
+        self.player_by_pid(self.turn)
+    }
+    pub fn player_by_pid(&self, pid: Pid) -> &Player {
+        match pid {
             Pid::P1 => &self.p1,
             Pid::P2 => &self.p2,
         }
@@ -41,9 +44,31 @@ impl Game {
             }
         };
         let mut lines = Vec::new();
-        lines.push(format!("{:?}", commands));
-        let intentions = analyze_intentions(commands);
-        lines.push(format!("{:?}", intentions));
+        //lines.push(format!("{:?}", commands));
+        let intentions = match analyze_intentions(commands) {
+            Ok(intentions) => intentions,
+            Err(e) => {
+                return Response {
+                    lines: vec![e],
+                    winrar: None,
+                }
+            }
+        };
+        //lines.push(format!("{:?}", intentions));
+        for intention in intentions {
+            match intention {
+                Intention::Summon { who } => {
+                    lines.push(format!("{} summoned {}.", self.current_player().name, who))
+                }
+                Intention::EndTurn => {
+                    self.turn = self.turn.other();
+                    lines.push(format!(
+                        "Now it's your turn, {}!",
+                        self.current_player().name
+                    ));
+                }
+            }
+        }
         Response {
             lines,
             winrar: None,
@@ -107,6 +132,7 @@ impl<'a, I: Iterator<Item = &'a str>> Aism<'a, I> {
                         self.state = AismState::Summon;
                         ConsumeResult::More
                     }
+                    "end" => ConsumeResult::Intention(Intention::EndTurn),
                     _ => ConsumeResult::Error("EXCUSE ME? WHAT?".to_string()),
                 },
                 None => ConsumeResult::End,
@@ -141,6 +167,7 @@ enum AismState {
 #[derive(Debug)]
 enum Intention {
     Summon { who: String },
+    EndTurn,
 }
 
 /// A response to whatever is running the battle about the state of the battle,
@@ -153,7 +180,7 @@ pub struct Response {
 }
 
 /// Identify whether we're talking about player 1 or player 2
-#[derive(PartialEq)]
+#[derive(PartialEq, Clone, Copy)]
 pub enum Pid {
     P1,
     P2,
