@@ -1,6 +1,10 @@
 [[package]]
 name = "aarena"
 version = "0.1.0"
+dependencies = [
+ "rustyline 1.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "split-whitespace-rest 0.1.0 (git+https://github.com/crumblingstatue/split-whitespace-rest)",
+]
 
 [[package]]
 name = "adler32"
