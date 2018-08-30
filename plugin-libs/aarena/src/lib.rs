@@ -102,7 +102,7 @@ impl<'a, I: Iterator<Item = &'a str>> Aism<'a, I> {
     fn consume(&mut self) -> ConsumeResult {
         match self.state {
             AismState::Fresh => match self.commands.next() {
-                Some(cmd) => match cmd {
+                Some(cmd) => match &cmd.to_lowercase()[..] {
                     "summon" => {
                         self.state = AismState::Summon;
                         ConsumeResult::More
