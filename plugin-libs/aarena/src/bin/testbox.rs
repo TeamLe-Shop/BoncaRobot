@@ -21,7 +21,7 @@ fn main() {
                 for line in &response.lines {
                     println!("{}", line);
                 }
-                editor.add_history_entry(&line);
+                editor.add_history_entry(line);
             }
             Err(e) => {
                 match e {
