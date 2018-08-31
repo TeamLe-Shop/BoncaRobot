@@ -30,6 +30,8 @@ struct Unit {
     ad: u16,
     /// Current max hp
     max_hp: u16,
+    /// Current hp
+    hp: u16,
     /// Current side of the battlefield
     side: Pid,
     /// Current row of the battlefield
@@ -41,13 +43,14 @@ impl Unit {
         Self {
             ad: def.ad,
             max_hp: def.hp,
+            hp: def.hp,
             side: def.owner,
             row: row,
         }
     }
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 enum Row {
     Front,
     Back,
@@ -103,7 +106,7 @@ impl Game {
         }
         let mut lines = Vec::new();
         //lines.push(format!("{:?}", commands));
-        let intentions = match analyze_intentions(commands) {
+        let intentions = match analyze_intentions(commands, self) {
             Ok(intentions) => intentions,
             Err(e) => {
                 return Response {
@@ -163,6 +166,28 @@ impl Game {
                             owner: self.turn,
                         },
                     );
+                }
+                Intention::Attack(attacker, target) => {
+                    let mut ad = self.units[&attacker].ad;
+                    if self.units[&attacker].row == Row::Back {
+                        ad /= 2;
+                    }
+                    if self.units[&target].row == Row::Back {
+                        ad /= 2;
+                    }
+                    lines.push(format!(
+                        "{} attacks {} for {} DAMAGE.",
+                        attacker, target, ad
+                    ));
+                    self.units.get_mut(&target).unwrap().hp =
+                        self.units[&target].hp.saturating_sub(ad);
+                    let hp = self.units[&target].hp;
+                    if hp == 0 {
+                        lines.push(format!("{} was fragged by {}", target, attacker));
+                        self.units.remove(&target);
+                    } else {
+                        lines.push(format!("O noes, {} only has {} hp left", target, hp));
+                    }
                 }
                 Intention::EndTurn => {
                     if self.round == 1 {
@@ -227,11 +252,12 @@ fn filter_commands(mut msg: &str) -> Result<Vec<&str>, ()> {
 
 fn analyze_intentions<'a, I: IntoIterator<Item = &'a str>>(
     commands: I,
+    game: &Game,
 ) -> Result<Vec<Intention>, String> {
     let mut intentions = Vec::new();
     let mut sm = Aism::new(commands.into_iter());
     loop {
-        match sm.consume() {
+        match sm.consume(game) {
             ConsumeResult::Intention(intention) => {
                 intentions.push(intention);
             }
@@ -256,7 +282,7 @@ impl<'a, I: Iterator<Item = &'a str>> Aism<'a, I> {
             commands,
         }
     }
-    fn consume(&mut self) -> ConsumeResult {
+    fn consume(&mut self, gay: &Game) -> ConsumeResult {
         match self.state {
             AismState::Fresh => match self.commands.next() {
                 Some(cmd) => match &cmd.to_lowercase()[..] {
@@ -269,7 +295,14 @@ impl<'a, I: Iterator<Item = &'a str>> Aism<'a, I> {
                         ConsumeResult::More
                     }
                     "end" => ConsumeResult::Intention(Intention::EndTurn),
-                    _ => ConsumeResult::Error("EXCUSE ME? WHAT?".to_string()),
+                    _ => {
+                        if gay.units.contains_key(cmd) {
+                            self.state = AismState::UnitRef(cmd);
+                            ConsumeResult::More
+                        } else {
+                            ConsumeResult::Error("EXCUSE ME? WHAT?".to_string())
+                        }
+                    }
                 },
                 None => ConsumeResult::End,
             },
@@ -365,6 +398,33 @@ impl<'a, I: Iterator<Item = &'a str>> Aism<'a, I> {
                 }
                 None => ConsumeResult::Error("Next time maybe give Hp too".to_string()),
             },
+            AismState::UnitRef(name) => match self.commands.next() {
+                Some(cmd) => match &cmd.to_lowercase()[..] {
+                    "attack" => {
+                        self.state = AismState::UnitAttack(name);
+                        ConsumeResult::More
+                    }
+                    _ => ConsumeResult::Error("Naww. Nah. No.".to_string()),
+                },
+                None => ConsumeResult::Error(format!("What about {}?", name)),
+            },
+            AismState::UnitAttack(name) => match self.commands.next() {
+                Some(unit) => {
+                    if gay.units.contains_key(unit) {
+                        self.state = AismState::Fresh;
+                        ConsumeResult::Intention(Intention::Attack(
+                            name.to_owned(),
+                            unit.to_owned(),
+                        ))
+                    } else {
+                        ConsumeResult::Error(format!(
+                            "There is no {}. You must be hallucinating.",
+                            unit
+                        ))
+                    }
+                }
+                None => ConsumeResult::Error("You wanna attack thin air?".to_string()),
+            },
         }
     }
 }
@@ -420,6 +480,8 @@ enum AismState<'a> {
     IntroduceName(&'a str),
     IntroduceNameAd(&'a str, u16),
     IntroduceNameHp(&'a str, u16),
+    UnitRef(&'a str),
+    UnitAttack(&'a str),
 }
 
 #[derive(Debug)]
@@ -427,6 +489,7 @@ enum Intention {
     Summon { who: String, row: Row },
     EndTurn,
     Introduce { name: String, hp: u16, ad: u16 },
+    Attack(String, String),
 }
 
 /// A response to whatever is running the battle about the state of the battle,
