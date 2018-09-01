@@ -85,8 +85,6 @@ impl Game {
         }
     }
     /// Interpret a message as a battle command and advance the battle.
-    ///
-    /// This is the MAIN SHOW.
     pub fn interpret(&mut self, msg: &str, pid: Pid) -> Response {
         let commands = match filter_commands(msg) {
             Ok(commands) => commands,
@@ -110,7 +108,6 @@ impl Game {
                 winrar: None,
             };
         }
-        let mut lines = Vec::new();
         //lines.push(format!("{:?}", commands));
         let intentions = match analyze_intentions(commands, self) {
             Ok(intentions) => intentions,
@@ -122,6 +119,11 @@ impl Game {
             }
         };
         //lines.push(format!("{:?}", intentions));
+        self.run_intentions(intentions)
+    }
+    /// Try and do the intentions of the player. This is where the actual simulation takes place.
+    fn run_intentions<I: IntoIterator<Item = Intention>>(&mut self, intentions: I) -> Response {
+        let mut lines = Vec::new();
         let mut endturn = false;
         for intention in intentions {
             match intention {
