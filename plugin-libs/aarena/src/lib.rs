@@ -532,7 +532,7 @@ impl Pid {
 
 pub struct Player {
     /// Name of the player. Duh.
-    pub name: String,
+    name: String,
     /// Level. The higher level you are, the more advanced abilities you can use.
     level: u8,
     /// Lifepoints. Game over when depleted. Starts at 500.
@@ -546,5 +546,8 @@ impl Player {
             lp: 500,
             level: 1,
         }
+    }
+    pub fn name(&self) -> &str {
+        &self.name
     }
 }

@@ -10,7 +10,7 @@ fn main() {
     let mut game = Game::new("Pl1".into(), "Pl2".into());
     let mut editor = Editor::<()>::new();
     loop {
-        match editor.readline(&format!("[{}]> ", game.current_player().name)) {
+        match editor.readline(&format!("[{}]> ", game.current_player().name())) {
             Ok(line) => {
                 let current_player_pid = game.current_player_pid();
                 let response = game.interpret(&line, current_player_pid);
