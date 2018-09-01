@@ -17,6 +17,10 @@ fn main() {
                 for line in &response.lines {
                     println!("{}", line);
                 }
+                if let Some(winrar) = response.winrar {
+                    println!("{} wins.", game.player_by_pid(winrar).name());
+                    return;
+                }
                 editor.add_history_entry(line);
             }
             Err(e) => {

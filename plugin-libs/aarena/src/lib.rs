@@ -75,6 +75,10 @@ impl Game {
     pub fn current_player(&self) -> &Player {
         self.player_by_pid(self.turn)
     }
+    fn other_player_mut(&mut self) -> &mut Player {
+        let other_pid = self.turn.other();
+        self.player_by_pid_mut(other_pid)
+    }
     pub fn current_player_pid(&self) -> Pid {
         self.turn
     }
@@ -82,6 +86,12 @@ impl Game {
         match pid {
             Pid::P1 => &self.p1,
             Pid::P2 => &self.p2,
+        }
+    }
+    fn player_by_pid_mut(&mut self, pid: Pid) -> &mut Player {
+        match pid {
+            Pid::P1 => &mut self.p1,
+            Pid::P2 => &mut self.p2,
         }
     }
     /// Interpret a message as a battle command and advance the battle.
@@ -127,7 +137,7 @@ impl Game {
             ($fmt:expr, $($arg:tt)*) => { lines.push(format!($fmt, $($arg)*)) };
         }
         let mut endturn = false;
-        for intention in intentions {
+        'intent_loop: for intention in intentions {
             match intention {
                 Intention::Summon { who, row } => match self.monster_defs.get(&who) {
                     Some(def) => {
@@ -199,6 +209,46 @@ impl Game {
                         msg!("O noes, {} only has {} hp left", target, hp);
                     }
                 }
+                Intention::AttackLp(attacker) => {
+                    if self.units[&attacker].side != self.turn {
+                        msg!(
+                            "You can't attack with {}, they're not on your side.",
+                            attacker
+                        );
+                        break;
+                    }
+                    // If the other player still has monsters out, they will block the attack
+                    let mut fail = false;
+                    for (name, u) in &self.units {
+                        if u.side == self.turn.other() {
+                            msg!("{} blocks your attack. Epic fail.", name);
+                            fail = true;
+                            break;
+                        }
+                    }
+                    if !fail {
+                        let mut ad = self.units[&attacker].ad;
+                        if self.units[&attacker].row == Row::Back {
+                            ad /= 2;
+                        }
+                        let this_player_id = self.turn;
+                        let op = self.other_player_mut();
+                        op.lp = op.lp.saturating_sub(ad);
+                        if op.lp == 0 {
+                            msg!(
+                                "{} was torn into little bits by {}'s attack.",
+                                op.name,
+                                attacker
+                            );
+                            return Response {
+                                lines,
+                                winrar: Some(this_player_id),
+                            };
+                        } else {
+                            msg!("O shit, {} only has {} hp left", op.name, op.lp);
+                        }
+                    }
+                }
                 Intention::EndTurn => {
                     if self.round == 1 {
                         msg!("YOU GOTTA SUMMON A MONSTER.");
@@ -265,6 +315,8 @@ enum Intention {
     EndTurn,
     Introduce { name: String, hp: u16, ad: u16 },
     Attack(String, String),
+    // Attack lifepoints directly
+    AttackLp(String),
 }
 
 /// A response to whatever is running the battle about the state of the battle,

@@ -173,7 +173,10 @@ impl<'a, I: Iterator<Item = &'a str>> Aism<'a, I> {
                         ))
                     }
                 }
-                None => ConsumeResult::Error("You wanna attack thin air?".to_string()),
+                None => {
+                    self.state = AismState::Fresh;
+                    ConsumeResult::Intention(Intention::AttackLp(name.to_owned()))
+                }
             },
         }
     }
