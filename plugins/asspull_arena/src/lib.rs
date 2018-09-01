@@ -172,7 +172,10 @@ impl Plugin for AssPull {
                         ctx.send_channel(line);
                     }
                     if let Some(winrar) = response.winrar {
-                        ctx.send_channel(&format!("{} is the winrar. Woohoo.", g.player_by_pid(winrar).name))
+                        ctx.send_channel(&format!(
+                            "{} is the winrar. Woohoo.",
+                            g.player_by_pid(winrar).name
+                        ))
                     }
                 }
             }
