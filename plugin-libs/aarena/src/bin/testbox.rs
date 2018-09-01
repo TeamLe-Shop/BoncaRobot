@@ -5,13 +5,9 @@ use rustyline::error::ReadlineError;
 use rustyline::Editor;
 
 use aarena::Game;
-use std::env;
 
 fn main() {
-    let mut args = env::args().skip(1);
-    let p1name = args.next().expect("p1name");
-    let p2name = args.next().expect("p2name");
-    let mut game = Game::new(p1name, p2name);
+    let mut game = Game::new("Pl1".into(), "Pl2".into());
     let mut editor = Editor::<()>::new();
     loop {
         match editor.readline(&format!("[{}]> ", game.current_player().name)) {
