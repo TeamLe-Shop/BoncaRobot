@@ -121,13 +121,15 @@ impl AssPull {
                 if *nick == *g.p1().name() {
                     ctx.send_channel(&format!(
                         "{} IS A BIG CHICKEN! {} WINS!",
-                        g.p1().name(), g.p2().name()
+                        g.p1().name(),
+                        g.p2().name()
                     ));
                     cancel = true;
                 } else if *nick == *g.p2().name() {
                     ctx.send_channel(&format!(
                         "{} IS A BIG CHICKEN! {} WINS!",
-                        g.p2().name(), g.p1().name()
+                        g.p2().name(),
+                        g.p1().name()
                     ));
                     cancel = true
                 } else {
