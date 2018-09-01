@@ -129,37 +129,34 @@ impl Game {
         let mut endturn = false;
         for intention in intentions {
             match intention {
-                Intention::Summon { who, row } => {
-                    match self.monster_defs.get(&who) {
-                        Some(def) => {
-                            if def.owner == self.turn {
-                                use std::collections::hash_map::Entry;
-                                let cpname = self.current_player().name.clone();
-                                match self.units.entry(who.clone()) {
-                                    Entry::Occupied(_) => {
-                                        msg!("{} is already out.", who);
-                                        break;
-                                    }
-                                    Entry::Vacant(en) => {
-                                        en.insert(Unit::new(def, row));
-                                        msg!("{} summoned {} to the {:?} row.", cpname, who, row);
-                                    }
+                Intention::Summon { who, row } => match self.monster_defs.get(&who) {
+                    Some(def) => {
+                        if def.owner == self.turn {
+                            use std::collections::hash_map::Entry;
+                            let cpname = self.current_player().name.clone();
+                            match self.units.entry(who.clone()) {
+                                Entry::Occupied(_) => {
+                                    msg!("{} is already out.", who);
+                                    break;
                                 }
-                            } else {
-                                msg!(
-                                    "Hey, you can't use that! It belongs to {}",
-                                    self.player_by_pid(self.turn.other()).name
-                                );
-                                break;
+                                Entry::Vacant(en) => {
+                                    en.insert(Unit::new(def, row));
+                                    msg!("{} summoned {} to the {:?} row.", cpname, who, row);
+                                }
                             }
-                        }
-                        None => {
-                            msg!("{} Doesn't exist. It's only in your imagination.", who);
+                        } else {
+                            msg!(
+                                "Hey, you can't use that! It belongs to {}",
+                                self.player_by_pid(self.turn.other()).name
+                            );
                             break;
                         }
                     }
-                    self.moves_left -= 1;
-                }
+                    None => {
+                        msg!("{} Doesn't exist. It's only in your imagination.", who);
+                        break;
+                    }
+                },
                 Intention::Introduce { name, ad, hp } => {
                     msg!("Ok");
                     self.monster_defs.insert(
@@ -170,6 +167,7 @@ impl Game {
                             owner: self.turn,
                         },
                     );
+                    continue;
                 }
                 Intention::Attack(attacker, target) => {
                     let mut ad = self.units[&attacker].ad;
@@ -199,6 +197,9 @@ impl Game {
                     break;
                 }
             }
+            // The following is executed after a valid turn-consuming move.
+            // Use break or continue otherwise.
+            self.moves_left -= 1;
             if self.moves_left == 0 {
                 if self.round == 1 {
                     msg!(
