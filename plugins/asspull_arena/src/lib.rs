@@ -105,7 +105,12 @@ impl AssPull {
                 ref challengee,
             } => {
                 if *nick == *challenger {
-                    ctx.send_channel(&format!("Hah, {} is a big chicken. He challenged {}, then immediately chickened out! What a coward! Let's all laugh at him! HAHAHAHAHAHAHAHA!", challenger, challengee));
+                    ctx.send_channel(&format!(
+                        "Hah, {} is a big chicken. He challenged {}, \
+                         then immediately chickened out! What a coward! Let's all laugh at him! \
+                         HAHAHAHAHAHAHAHA!",
+                        challenger, challengee
+                    ));
                     cancel = true;
                 } else if *nick == *challengee {
                     ctx.send_channel(&format!(
