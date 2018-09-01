@@ -45,7 +45,7 @@ impl Unit {
             max_hp: def.hp,
             hp: def.hp,
             side: def.owner,
-            row: row,
+            row,
         }
     }
 }
@@ -433,11 +433,15 @@ fn parse_pointdef(text: &str) -> Result<PointDef, String> {
     let mut split = text.split_whitespace();
     let value = split
         .next()
-        .ok_or("csb".to_string())?
+        .ok_or_else(|| "csb".to_string())?
         .trim()
         .parse::<u16>()
         .map_err(|e| e.to_string())?;
-    match &split.next().ok_or("csb".to_string())?.to_lowercase()[..] {
+    match &split
+        .next()
+        .ok_or_else(|| "csb".to_string())?
+        .to_lowercase()[..]
+    {
         "ad" => Ok(PointDef {
             value,
             kind: PointKind::Ad,
@@ -509,8 +513,8 @@ pub enum Pid {
 }
 
 impl Pid {
-    fn other(&self) -> Self {
-        match *self {
+    fn other(self) -> Self {
+        match self {
             Pid::P1 => Pid::P2,
             Pid::P2 => Pid::P1,
         }
