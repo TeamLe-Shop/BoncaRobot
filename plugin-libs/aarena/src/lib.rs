@@ -170,6 +170,13 @@ impl Game {
                     continue;
                 }
                 Intention::Attack(attacker, target) => {
+                    if self.units[&attacker].side != self.turn {
+                        msg!(
+                            "You can't attack with {}, they're not on your side.",
+                            attacker
+                        );
+                        break;
+                    }
                     let mut ad = self.units[&attacker].ad;
                     if self.units[&attacker].row == Row::Back {
                         ad /= 2;
