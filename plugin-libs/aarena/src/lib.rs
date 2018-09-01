@@ -3,8 +3,8 @@
 use std::collections::HashMap;
 
 pub struct Game {
-    pub p1: Player,
-    pub p2: Player,
+    p1: Player,
+    p2: Player,
     /// Whose turn it is
     turn: Pid,
     /// Moves left this turn. Starts at 3, except in round 1, which is summoner round.
@@ -233,6 +233,12 @@ impl Game {
             lines,
             winrar: None,
         }
+    }
+    pub fn p1(&self) -> &Player {
+        &self.p1
+    }
+    pub fn p2(&self) -> &Player {
+        &self.p1
     }
 }
 

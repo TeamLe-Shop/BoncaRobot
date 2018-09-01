@@ -51,8 +51,8 @@ impl AssPull {
                 ctx.send_channel(&format!(
                     "{}: Sorry, a game is already in progress between {} and {}.",
                     ctx.sender.nickname(),
-                    g.p1.name,
-                    g.p2.name,
+                    g.p1().name,
+                    g.p2().name,
                 ));
             }
         }
@@ -83,8 +83,8 @@ impl AssPull {
                 ctx.send_channel(&format!(
                     "{}: Cool story bro. Keep watching {} vs {}",
                     ctx.sender.nickname(),
-                    g.p1.name,
-                    g.p2.name
+                    g.p1().name,
+                    g.p2().name
                 ));
             }
         }
@@ -118,16 +118,16 @@ impl AssPull {
                 }
             }
             AssPullState::Game(ref g) => {
-                if *nick == *g.p1.name {
+                if *nick == *g.p1().name {
                     ctx.send_channel(&format!(
                         "{} IS A BIG CHICKEN! {} WINS!",
-                        g.p1.name, g.p2.name
+                        g.p1().name, g.p2().name
                     ));
                     cancel = true;
-                } else if *nick == *g.p2.name {
+                } else if *nick == *g.p2().name {
                     ctx.send_channel(&format!(
                         "{} IS A BIG CHICKEN! {} WINS!",
-                        g.p2.name, g.p1.name
+                        g.p2().name, g.p1().name
                     ));
                     cancel = true
                 } else {
@@ -161,9 +161,9 @@ impl Plugin for AssPull {
             AssPullState::Game(ref mut g) => {
                 let nick = ctx.sender.nickname();
                 let mut pid = None;
-                if *nick == *g.p1.name {
+                if *nick == *g.p1().name {
                     pid = Some(Pid::P1);
-                } else if *nick == *g.p2.name {
+                } else if *nick == *g.p2().name {
                     pid = Some(Pid::P2);
                 }
                 if let Some(pid) = pid {
