@@ -30,12 +30,15 @@ impl IsoLangPlugin {
 
 impl Plugin for IsoLangPlugin {
     fn new() -> Self {
-        let mut rdr = csv::Reader::from_string(CSV);
+        let mut rdr = csv::Reader::from_reader(CSV.as_bytes());
         let mut map = HashMap::new();
 
-        for row in rdr.decode() {
-            let (code, name): (String, String) = row.unwrap();
-            map.insert(code, name);
+        for result in rdr.records() {
+            let record = result.unwrap();
+            map.insert(
+                record.get(0).unwrap().to_owned(),
+                record.get(1).unwrap().to_owned(),
+            );
         }
         Self { map }
     }

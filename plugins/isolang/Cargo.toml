@@ -3,12 +3,12 @@ name = "isolang"
 version = "0.1.0"
 authors = ["Mika Attila <radiantstatue@gmail.com>"]
 
+[dependencies]
+csv = "1.0.1"
+
 [dependencies.boncarobot]
 path = "../.."
 default-features = false
-
-[dependencies]
-csv = "0.15"
 
 [lib]
 crate-type = ["dylib"]

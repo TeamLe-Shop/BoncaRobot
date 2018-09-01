@@ -4,8 +4,8 @@ version = "0.1.0"
 authors = ["Mika Attila <radiantstatue@gmail.com>"]
 
 [dependencies]
-scraper = "*"
-url = "*"
+scraper = "0.7.0"
+url = "1.7.1"
 
 [dependencies.http-request-common]
 path = "../../plugin-libs/http-request-common"
