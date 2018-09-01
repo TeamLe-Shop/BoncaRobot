@@ -12,8 +12,8 @@ fn main() {
     loop {
         match editor.readline(&format!("[{}]> ", game.current_player().name)) {
             Ok(line) => {
-                let turn = game.turn;
-                let response = game.interpret(&line, turn);
+                let current_player_pid = game.current_player_pid();
+                let response = game.interpret(&line, current_player_pid);
                 for line in &response.lines {
                     println!("{}", line);
                 }

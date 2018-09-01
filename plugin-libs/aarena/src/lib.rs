@@ -6,7 +6,7 @@ pub struct Game {
     pub p1: Player,
     pub p2: Player,
     /// Whose turn it is
-    pub turn: Pid,
+    turn: Pid,
     /// Moves left this turn. Starts at 3, except in round 1, which is summoner round.
     moves_left: u8,
     /// Number of the current round. Starts at 1.
@@ -71,6 +71,9 @@ impl Game {
     /// Returns the player whose turn it isnow
     pub fn current_player(&self) -> &Player {
         self.player_by_pid(self.turn)
+    }
+    pub fn current_player_pid(&self) -> Pid {
+        self.turn
     }
     pub fn player_by_pid(&self, pid: Pid) -> &Player {
         match pid {
