@@ -158,6 +158,10 @@ impl Game {
                     }
                 },
                 Intention::Introduce { name, ad, hp } => {
+                    if self.monster_defs.contains_key(&name) {
+                        msg!("{} has been already introduced, stupid!", name);
+                        break;
+                    }
                     msg!("Ok");
                     self.monster_defs.insert(
                         name,
