@@ -108,7 +108,6 @@ impl Game {
                 winrar: None,
             };
         }
-        //lines.push(format!("{:?}", commands));
         let intentions = match analyze_intentions(commands, self) {
             Ok(intentions) => intentions,
             Err(e) => {
@@ -118,12 +117,15 @@ impl Game {
                 }
             }
         };
-        //lines.push(format!("{:?}", intentions));
         self.run_intentions(intentions)
     }
     /// Try and do the intentions of the player. This is where the actual simulation takes place.
     fn run_intentions<I: IntoIterator<Item = Intention>>(&mut self, intentions: I) -> Response {
         let mut lines = Vec::new();
+        macro_rules! msg {
+            ($fmt:expr) => { lines.push($fmt.to_owned()) };
+            ($fmt:expr, $($arg:tt)*) => { lines.push(format!($fmt, $($arg)*)) };
+        }
         let mut endturn = false;
         for intention in intentions {
             match intention {
@@ -135,37 +137,31 @@ impl Game {
                                 let cpname = self.current_player().name.clone();
                                 match self.units.entry(who.clone()) {
                                     Entry::Occupied(_) => {
-                                        lines.push(format!("{} is already out.", who));
+                                        msg!("{} is already out.", who);
                                         break;
                                     }
                                     Entry::Vacant(en) => {
                                         en.insert(Unit::new(def, row));
-                                        lines.push(format!(
-                                            "{} summoned {} to the {:?} row.",
-                                            cpname, who, row
-                                        ));
+                                        msg!("{} summoned {} to the {:?} row.", cpname, who, row);
                                     }
                                 }
                             } else {
-                                lines.push(format!(
+                                msg!(
                                     "Hey, you can't use that! It belongs to {}",
                                     self.player_by_pid(self.turn.other()).name
-                                ));
+                                );
                                 break;
                             }
                         }
                         None => {
-                            lines.push(format!(
-                                "{} Doesn't exist. It's only in your imagination.",
-                                who
-                            ));
+                            msg!("{} Doesn't exist. It's only in your imagination.", who);
                             break;
                         }
                     }
                     self.moves_left -= 1;
                 }
                 Intention::Introduce { name, ad, hp } => {
-                    lines.push("Ok.".to_owned());
+                    msg!("Ok");
                     self.monster_defs.insert(
                         name,
                         MonsterDef {
@@ -183,23 +179,20 @@ impl Game {
                     if self.units[&target].row == Row::Back {
                         ad /= 2;
                     }
-                    lines.push(format!(
-                        "{} attacks {} for {} DAMAGE.",
-                        attacker, target, ad
-                    ));
+                    msg!("{} attacks {} for {} DAMAGE.", attacker, target, ad);
                     self.units.get_mut(&target).unwrap().hp =
                         self.units[&target].hp.saturating_sub(ad);
                     let hp = self.units[&target].hp;
                     if hp == 0 {
-                        lines.push(format!("{} was fragged by {}", target, attacker));
+                        msg!("{} was fragged by {}", target, attacker);
                         self.units.remove(&target);
                     } else {
-                        lines.push(format!("O noes, {} only has {} hp left", target, hp));
+                        msg!("O noes, {} only has {} hp left", target, hp);
                     }
                 }
                 Intention::EndTurn => {
                     if self.round == 1 {
-                        lines.push("YOU GOTTA SUMMON A MONSTER.".to_string());
+                        msg!("YOU GOTTA SUMMON A MONSTER.");
                         break;
                     }
                     endturn = true;
@@ -208,12 +201,12 @@ impl Game {
             }
             if self.moves_left == 0 {
                 if self.round == 1 {
-                    lines.push(format!(
+                    msg!(
                         "{} finished his first summoning.",
                         self.current_player().name
-                    ));
+                    );
                 } else {
-                    lines.push(format!("{} is out of moves.", self.current_player().name));
+                    msg!("{} is out of moves.", self.current_player().name);
                 }
                 endturn = true;
                 break;
@@ -229,10 +222,7 @@ impl Game {
                 self.moves_left = 3;
             }
             self.turn = self.turn.other();
-            lines.push(format!(
-                "Now it's your turn, {}!",
-                self.current_player().name
-            ));
+            msg!("Now it's your turn, {}!", self.current_player().name);
         }
         Response {
             lines,
