@@ -24,7 +24,7 @@ fn main() {
                     socket.send(line.clone().into_bytes()).unwrap();
                     let reply = String::from_utf8(socket.recv().unwrap()).unwrap();
                     println!("{}", reply);
-                    editor.add_history_entry(&line);
+                    editor.add_history_entry(line);
                 }
                 Err(e) => {
                     match e {
