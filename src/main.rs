@@ -1,6 +1,6 @@
-//! Boncactl: Resident overlord @ ##newboston
+//! Boncarobot: Resident overlord @ ##newboston
 //!
-//! Boncactl is an IRC bot whose functionality is implemented through plugins.
+//! Boncarobot is an IRC bot whose functionality is implemented through plugins.
 //!
 //! It can also be controlled locally through IPC.
 
