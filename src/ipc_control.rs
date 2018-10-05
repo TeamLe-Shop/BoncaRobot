@@ -16,7 +16,8 @@ pub(crate) fn listen(core: &Mutex<Core>, config: &Mutex<Config>) {
         .bind(&format!(
             "ipc://{}/boncarobot.sock",
             tmpdir.to_str().unwrap()
-        )).unwrap();
+        ))
+        .unwrap();
 
     let mut quit_requested = false;
 
@@ -74,11 +75,13 @@ fn handle_command(
             None => writeln!(&mut reply, "Name, please!").unwrap(),
         },
         "unload" => match words.next() {
-            Some(name) => if core.unload_plugin(name) {
-                writeln!(&mut reply, "Removed \"{}\" plugin.", name).unwrap();
-                core.irc_bridge
-                    .msg_all_joined_channels(&format!("[Plugin '{}' was unloaded]", name));
-            },
+            Some(name) => {
+                if core.unload_plugin(name) {
+                    writeln!(&mut reply, "Removed \"{}\" plugin.", name).unwrap();
+                    core.irc_bridge
+                        .msg_all_joined_channels(&format!("[Plugin '{}' was unloaded]", name));
+                }
+            }
             None => writeln!(&mut reply, "Don't forget the name!").unwrap(),
         },
         "reload" => match words.next() {

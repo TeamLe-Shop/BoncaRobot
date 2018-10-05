@@ -109,10 +109,12 @@ impl Permutations {
             if self.chars[left] < right_ch {
                 match smallest_value {
                     None => smallest_value = Some((right_ch, right)),
-                    Some(ref mut smallest) => if right_ch < smallest.0 {
-                        smallest.0 = right_ch;
-                        smallest.1 = right;
-                    },
+                    Some(ref mut smallest) => {
+                        if right_ch < smallest.0 {
+                            smallest.0 = right_ch;
+                            smallest.1 = right;
+                        }
+                    }
                 }
             }
             right += 1;

@@ -15,7 +15,8 @@ fn main() {
         .connect(&format!(
             "ipc://{}/boncarobot.sock",
             tmpdir.to_str().unwrap()
-        )).unwrap();
+        ))
+        .unwrap();
     if command_str.is_empty() {
         let mut editor = Editor::<()>::new();
         loop {
