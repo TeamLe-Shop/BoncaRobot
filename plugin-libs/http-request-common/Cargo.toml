@@ -5,6 +5,4 @@ authors = ["Mika Attila <radiantstatue@gmail.com>"]
 
 [dependencies]
 percent-encoding = "1.0.1"
-
-[dependencies.reqwest]
-git = "https://github.com/seanmonstar/reqwest.git"
+reqwest = "0.9.2"
