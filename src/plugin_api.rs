@@ -6,8 +6,8 @@
 extern crate downcast_rs;
 pub extern crate hiirc;
 
-use downcast_rs::Downcast;
 use crate::util::SplitChunks;
+use downcast_rs::Downcast;
 
 /// The most commonly used types when implementing a plugin.
 pub mod prelude {
