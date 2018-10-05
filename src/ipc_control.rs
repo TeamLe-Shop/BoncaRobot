@@ -1,7 +1,7 @@
 //! Implementation of IPC control.
 
-use config::{self, Config};
-use core::Core;
+use crate::config::{self, Config};
+use crate::core::Core;
 use scaproust::proto::pair::Pair;
 use scaproust::{Ipc, SessionBuilder, Socket};
 use std::sync::Mutex;

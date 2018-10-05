@@ -1,8 +1,8 @@
-use config::Config;
+use crate::config::Config;
 use distance::damerau_levenshtein;
 use hiirc::{Channel, ChannelUser, Irc, IrcWrite, Listener};
 use plugin_api::Context;
-use plugin_container::PluginContainer;
+use crate::plugin_container::PluginContainer;
 use split_whitespace_rest::SplitWhitespace;
 use std;
 use std::collections::HashMap;

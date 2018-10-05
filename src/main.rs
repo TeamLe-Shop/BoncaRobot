@@ -19,7 +19,7 @@ mod core;
 mod ipc_control;
 mod plugin_container;
 
-use core::SharedCore;
+use crate::core::SharedCore;
 use std::sync::{Arc, Mutex};
 use std::thread;
 

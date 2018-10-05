@@ -7,7 +7,7 @@ extern crate downcast_rs;
 pub extern crate hiirc;
 
 use downcast_rs::Downcast;
-use util::SplitChunks;
+use crate::util::SplitChunks;
 
 /// The most commonly used types when implementing a plugin.
 pub mod prelude {
@@ -17,7 +17,7 @@ pub mod prelude {
 
 mod util;
 
-use prelude::*;
+use crate::prelude::*;
 
 /// IRC context.
 #[derive(Clone, Copy)]
