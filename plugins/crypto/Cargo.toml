@@ -14,9 +14,4 @@ default-features = false
 path = "../../plugin-libs/http-request-common"
 
 [lib]
-crate-type = ["dylib"]
-# This is important, makes it so that the lib is compiled with
-# rustc -C prefer-dynamic, which is required for
-# things like freeing something in the host that was allocated
-# in the plugin
-plugin = true
+crate-type = ["cdylib"]
