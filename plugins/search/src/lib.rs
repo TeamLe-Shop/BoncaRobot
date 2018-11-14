@@ -75,7 +75,9 @@ impl SearchPlugin {
                 if status.is_success() {
                     match extract_yt(&body) {
                         Ok(link) => {
-                            let ytlink = format!("https://youtu.be/{}", link);
+                            let mut ytlink = format!("https://www.youtube.com/watch?v={}", link);
+                            // Stupid &amp;
+                            ytlink = ytlink.replace("&amp;", "&");
                             ctx.send_channel(&ytlink);
                             let title = get_title(&ytlink);
                             ctx.send_channel(&title);
