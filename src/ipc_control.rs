@@ -21,8 +21,8 @@ pub(crate) fn listen(core: &Mutex<Core>, config: &Mutex<Config>) {
 
     let mut quit_requested = false;
 
-    while !quit_requested {
-        if let Ok(buffer) = socket.recv() {
+    while !quit_requested && !core.lock().unwrap().quit {
+        if let Ok(buffer) = socket.try_recv() {
             let mut core = core.lock().unwrap();
             let mut config = config.lock().unwrap();
             handle_command(

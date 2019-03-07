@@ -19,6 +19,8 @@ pub(crate) struct Core {
     config: Arc<Mutex<Config>>,
     plugins: HashMap<String, PluginContainer>,
     pub irc_bridge: IrcBridge,
+    /// This is true if for some reason, the core deemed that boncarobot should quit
+    pub quit: bool,
 }
 
 /// Allows IRC access (send messages/join/leave/quit/etc.) for IPC clients.
@@ -70,6 +72,7 @@ impl Core {
             config,
             plugins,
             irc_bridge: IrcBridge::new(),
+            quit: false,
         }
     }
     fn channel_msg(
@@ -272,5 +275,14 @@ impl Listener for SharedCore {
         message: &str,
     ) {
         self.lock().channel_msg(&irc, &channel, &sender, message);
+    }
+    fn error_msg(&mut self, _irc: Arc<Irc>, code: &hiirc::Code, msg: &hiirc::Message) {
+        match code {
+            hiirc::Code::ErrNicknameinuse => {
+                eprintln!("Nickname already in use. Pick another one.");
+                self.0.lock().unwrap().quit = true;
+            }
+            _ => eprintln!("Error. code: {:?}, msg: {:?}", code, msg),
+        }
     }
 }
