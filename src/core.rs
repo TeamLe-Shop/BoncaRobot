@@ -165,7 +165,7 @@ impl Core {
                         let irc = Arc::clone(irc);
                         let channel = Arc::clone(channel);
                         let sender = Arc::clone(sender);
-                        let arg = arg.trim_left().to_owned();
+                        let arg = arg.trim_start().to_owned();
                         let fun = cmd.fun;
                         move || {
                             fun(
