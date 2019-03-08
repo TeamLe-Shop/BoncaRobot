@@ -26,10 +26,6 @@ impl UdPlugin {
             .get(0)
             .map(|arg| arg.parse::<u8>().unwrap_or(0))
             .unwrap_or(0);
-        ctx.send_channel(&format!(
-            "contains: {:?}, fuck: {:?} n: {:?}",
-            contains, fuck, n
-        ));
         with_json(&term, ctx, |json| {
             let mut i = 0;
             let entries = &json["list"];
