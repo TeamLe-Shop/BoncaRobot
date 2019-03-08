@@ -16,7 +16,8 @@ struct TellPlugin {
 }
 
 impl TellPlugin {
-    fn tell(this: &mut Plugin, arg: &str, ctx: Context) {
+    fn tell(this: &mut Plugin, opts: ParsedOpts, ctx: Context) {
+        let arg = &opts.free.join(" ");
         let this: &mut TellPlugin = this.downcast_mut().unwrap();
 
         let mut sw = SplitWhitespace::new(arg);
@@ -50,7 +51,7 @@ impl Plugin for TellPlugin {
         }
     }
     fn register(&self, meta: &mut PluginMeta) {
-        meta.command("tell", "Leave a message for someone", Self::tell);
+        meta.add_simple_command("tell", "Leave a message for someone", Self::tell);
     }
     fn channel_msg(&mut self, _msg: &str, ctx: Context) {
         let nick = ctx.sender.nickname();

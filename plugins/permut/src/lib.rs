@@ -6,7 +6,8 @@ use plugin_api::prelude::*;
 struct PermutPlugin;
 
 impl PermutPlugin {
-    fn permut(_this: &mut Plugin, arg: &str, ctx: Context) {
+    fn permut(_this: &mut Plugin, opts: ParsedOpts, ctx: Context) {
+        let arg = &opts.free.join(" ");
         let perms = permutations(arg);
         let mut msg = String::new();
         for p in perms {
@@ -30,7 +31,7 @@ impl Plugin for PermutPlugin {
         PermutPlugin
     }
     fn register(&self, meta: &mut PluginMeta) {
-        meta.command("permut", "permutate shit", Self::permut);
+        meta.add_simple_command("permut", "permutate shit", Self::permut);
     }
 }
 

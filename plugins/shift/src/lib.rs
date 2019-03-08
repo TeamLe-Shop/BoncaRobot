@@ -6,10 +6,12 @@ use plugin_api::prelude::*;
 struct ShiftPlugin;
 
 impl ShiftPlugin {
-    fn shl(_this: &mut Plugin, arg: &str, ctx: Context) {
+    fn shl(_this: &mut Plugin, opts: ParsedOpts, ctx: Context) {
+        let arg = &opts.free.join(" ");
         ctx.send_channel(&format!("{}: {}", ctx.sender.nickname(), &shl(arg)));
     }
-    fn shr(_this: &mut Plugin, arg: &str, ctx: Context) {
+    fn shr(_this: &mut Plugin, opts: ParsedOpts, ctx: Context) {
+        let arg = &opts.free.join(" ");
         ctx.send_channel(&format!("{}: {}", ctx.sender.nickname(), &shr(arg)));
     }
 }
@@ -19,8 +21,8 @@ impl Plugin for ShiftPlugin {
         ShiftPlugin
     }
     fn register(&self, meta: &mut PluginMeta) {
-        meta.command("shl", "Shifts shit left. e.g. 'kok' -> 'jij'", Self::shl);
-        meta.command(
+        meta.add_simple_command("shl", "Shifts shit left. e.g. 'kok' -> 'jij'", Self::shl);
+        meta.add_simple_command(
             "shr",
             "Shifts shit right. e.g. 'fuck you' -> 'givl upi",
             Self::shr,

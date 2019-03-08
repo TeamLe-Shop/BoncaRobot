@@ -1,7 +1,0 @@
-[package]
-name = "aarena"
-version = "0.1.0"
-authors = ["crumblingstatue <radiantstatue@gmail.com>"]
-
-[dependencies]
-rustyline = "2.1.0"

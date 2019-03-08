@@ -10,7 +10,8 @@ struct IsoLangPlugin {
 }
 
 impl IsoLangPlugin {
-    fn isolang(this: &mut Plugin, arg: &str, ctx: Context) {
+    fn isolang(this: &mut Plugin, opts: ParsedOpts, ctx: Context) {
+        let arg = &opts.free.join(" ");
         let this: &mut Self = this.downcast_mut().unwrap();
         let response = this
             .map
@@ -44,7 +45,7 @@ impl Plugin for IsoLangPlugin {
         Self { map }
     }
     fn register(&self, meta: &mut PluginMeta) {
-        meta.command(
+        meta.add_simple_command(
             "isolang",
             "Shows the full names of 2 character ISO lang codes",
             Self::isolang,

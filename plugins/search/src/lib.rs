@@ -35,7 +35,8 @@ pub fn parse_first_result(body: &str) -> Result<Option<String>, Box<Error>> {
 struct SearchPlugin;
 
 impl SearchPlugin {
-    fn search(_this: &mut Plugin, arg: &str, ctx: Context) {
+    fn search(_this: &mut Plugin, opts: ParsedOpts, ctx: Context) {
+        let arg = &opts.free.join(" ");
         if arg.is_empty() {
             ctx.send_channel("You need to search for something bro.");
             return;
@@ -65,7 +66,8 @@ impl SearchPlugin {
             }
         }
     }
-    fn ytsearch(_this: &mut Plugin, arg: &str, ctx: Context) {
+    fn ytsearch(_this: &mut Plugin, opts: ParsedOpts, ctx: Context) {
+        let arg = &opts.free.join(" ");
         if arg.is_empty() {
             ctx.send_channel("FLAVA FLAVA FOR MY PEOPLE PEOPLE, COME ON KID, HERE COMES THE FINAL");
             return;
@@ -107,8 +109,8 @@ impl Plugin for SearchPlugin {
         SearchPlugin
     }
     fn register(&self, meta: &mut PluginMeta) {
-        meta.command("search", "Bing search", Self::search);
-        meta.command("ytsearch", "Jewtube search", Self::ytsearch);
+        meta.add_simple_command("search", "Bing search", Self::search);
+        meta.add_simple_command("ytsearch", "Jewtube search", Self::ytsearch);
     }
 }
 

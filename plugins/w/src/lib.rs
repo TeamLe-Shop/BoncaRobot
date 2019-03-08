@@ -72,7 +72,8 @@ fn process_wp_result(result: Result<String, Box<Error>>, article_name: &str, ctx
 struct WPlugin;
 
 impl WPlugin {
-    fn w(_this: &mut Plugin, arg: &str, ctx: Context) {
+    fn w(_this: &mut Plugin, opts: ParsedOpts, ctx: Context) {
+        let arg = &opts.free.join(" ");
         if arg.is_empty() {
             ctx.send_channel("You need to search for something bro.");
             return;
@@ -107,7 +108,7 @@ impl Plugin for WPlugin {
         WPlugin
     }
     fn register(&self, meta: &mut PluginMeta) {
-        meta.command("w", "Spam short description of a wiki article", Self::w);
+        meta.add_simple_command("w", "Spam short description of a wiki article", Self::w);
     }
 }
 

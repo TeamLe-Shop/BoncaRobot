@@ -1,5 +1,3 @@
-#![warn(missing_docs)]
-
 //! The plugin API.
 
 #[macro_use]
@@ -11,12 +9,17 @@ use downcast_rs::Downcast;
 
 /// The most commonly used types when implementing a plugin.
 pub mod prelude {
-    pub use super::{Context, Plugin, PluginMeta};
+    pub use super::{
+        optparse::{Opt, ParsedOpts},
+        Command, Context, Plugin, PluginMeta,
+    };
     pub use hiirc::IrcWrite;
 }
 
+pub mod optparse;
 mod util;
 
+use crate::optparse::OptDef;
 use crate::prelude::*;
 
 /// IRC context.
@@ -58,7 +61,7 @@ impl<'a> Context<'a> {
 }
 
 /// Type of the function that gets called when a command is invoked.
-pub type CommandFn = fn(&mut Plugin, &str, Context);
+pub type CommandFn = fn(&mut Plugin, ParsedOpts, Context);
 
 /// A command that can be invoked by a user.
 pub struct Command {
@@ -68,6 +71,33 @@ pub struct Command {
     pub help: &'static str,
     /// The function that gets called when the command is invoked.
     pub fun: CommandFn,
+    pub opts: Vec<OptDef>,
+}
+
+impl Command {
+    pub fn new(name: &'static str, help: &'static str, fun: CommandFn) -> Self {
+        Self {
+            name,
+            help,
+            fun,
+            opts: Vec::new(),
+        }
+    }
+    pub fn opt(
+        mut self,
+        short: char,
+        long: &'static str,
+        help: &'static str,
+        takes_args: bool,
+    ) -> Self {
+        self.opts.push(OptDef {
+            short,
+            long,
+            help,
+            takes_args,
+        });
+        self
+    }
 }
 
 /// Metadata for a plugin.
@@ -79,8 +109,12 @@ pub struct PluginMeta {
 
 impl PluginMeta {
     /// Add a command.
-    pub fn command(&mut self, name: &'static str, help: &'static str, fun: CommandFn) {
-        self.commands.push(Command { name, help, fun })
+    pub fn add_command(&mut self, command: Command) {
+        self.commands.push(command);
+    }
+    /// Add simple command without any arguments.
+    pub fn add_simple_command(&mut self, name: &'static str, help: &'static str, fun: CommandFn) {
+        self.commands.push(Command::new(name, help, fun));
     }
 }
 

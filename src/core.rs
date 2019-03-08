@@ -163,21 +163,29 @@ impl Core {
             for cmd in &plugin.meta.commands {
                 if command == cmd.name {
                     match_found = true;
-                    std::thread::spawn({
-                        let plugin = plugin.plugin.clone();
-                        let irc = Arc::clone(irc);
-                        let channel = Arc::clone(channel);
-                        let sender = Arc::clone(sender);
-                        let arg = arg.trim_start().to_owned();
-                        let fun = cmd.fun;
-                        move || {
-                            fun(
-                                &mut *plugin.lock().unwrap(),
-                                &arg,
-                                Context::new(&irc, &channel, &sender),
-                            );
+                    let commandline = arg.trim_start().to_owned();
+                    match plugin_api::optparse::parse(&commandline, &cmd.opts) {
+                        Ok(parsed_opts) => {
+                            std::thread::spawn({
+                                let plugin = plugin.plugin.clone();
+                                let irc = Arc::clone(irc);
+                                let channel = Arc::clone(channel);
+                                let sender = Arc::clone(sender);
+
+                                let fun = cmd.fun;
+                                move || {
+                                    fun(
+                                        &mut *plugin.lock().unwrap(),
+                                        parsed_opts,
+                                        Context::new(&irc, &channel, &sender),
+                                    );
+                                }
+                            });
                         }
-                    });
+                        Err(e) => {
+                            let _ = irc.privmsg(channel.name(), &format!("{:?}", e));
+                        }
+                    }
                 } else {
                     let distance = damerau_levenshtein(command, cmd.name);
                     if distance < closest_match.1 {

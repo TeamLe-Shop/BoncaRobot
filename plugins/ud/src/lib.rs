@@ -2,11 +2,9 @@ extern crate http_request_common;
 extern crate json;
 #[macro_use]
 extern crate plugin_api;
-extern crate split_whitespace_rest;
 
 use json::JsonValue;
 use plugin_api::prelude::*;
-use split_whitespace_rest::SplitWhitespace;
 use std::error::Error;
 
 pub fn query(query: &str) -> Result<String, Box<Error>> {
@@ -19,48 +17,70 @@ pub fn query(query: &str) -> Result<String, Box<Error>> {
 struct UdPlugin;
 
 impl UdPlugin {
-    fn udn(_this: &mut Plugin, arg: &str, ctx: Context) {
-        let mut sw = SplitWhitespace::new(arg);
-        let entry = match sw.next() {
-            Some(en) => en,
-            None => {
-                ctx.send_channel("Need entry num bro.");
-                return;
+    fn ud(_this: &mut Plugin, opts: ParsedOpts, ctx: Context) {
+        let contains = opts.get_or_empty("contains");
+        let fuck = opts.get_or_empty("fuck");
+        let term = opts.free.join(" ");
+        let n = opts
+            .get_or_empty("number")
+            .get(0)
+            .map(|arg| arg.parse::<u8>().unwrap_or(0))
+            .unwrap_or(0);
+        ctx.send_channel(&format!(
+            "contains: {:?}, fuck: {:?} n: {:?}",
+            contains, fuck, n
+        ));
+        with_json(&term, ctx, |json| {
+            let mut i = 0;
+            let entries = &json["list"];
+            for v in entries.members() {
+                if !opts.given("loose") {
+                    if v["word"].as_str().unwrap().to_lowercase() != term.to_lowercase() {
+                        continue;
+                    }
+                }
+                if let Some(def) = v["definition"].as_str() {
+                    let mut all_contains_satisfied = true;
+                    for c in contains {
+                        if !def.to_lowercase().contains(&c.to_lowercase())
+                            && !v["example"]
+                                .as_str()
+                                .unwrap_or("")
+                                .to_lowercase()
+                                .contains(&c.to_lowercase())
+                        {
+                            all_contains_satisfied = false;
+                        }
+                    }
+                    let mut any_contains_fuck = false;
+                    for f in fuck {
+                        if def.to_lowercase().contains(&f.to_lowercase())
+                            || v["example"]
+                                .as_str()
+                                .unwrap_or("")
+                                .to_lowercase()
+                                .contains(&f.to_lowercase())
+                        {
+                            any_contains_fuck = true;
+                        }
+                    }
+
+                    if all_contains_satisfied && !any_contains_fuck {
+                        if i == n {
+                            display_def(
+                                &format!("{}: {}", v["word"].as_str().unwrap_or("?"), def),
+                                v["example"].as_str(),
+                                &term,
+                                ctx,
+                            );
+                            return;
+                        }
+                        i += 1;
+                    }
+                }
             }
-        };
-        let entry: usize = match entry.parse() {
-            Ok(n) => n,
-            Err(_) => {
-                ctx.send_channel("Very clever troll bro. Gimme number for entry plox.");
-                return;
-            }
-        };
-        udlookup(sw.rest_as_slice(), entry, ctx);
-    }
-    fn ud(_this: &mut Plugin, arg: &str, ctx: Context) {
-        udlookup(arg, 0, ctx);
-    }
-    fn udc(_this: &mut Plugin, arg: &str, ctx: Context) {
-        let mut sw = SplitWhitespace::new(arg);
-        let needle = match sw.next() {
-            Some(en) => en,
-            None => {
-                ctx.send_channel("Need needle, bro.");
-                return;
-            }
-        };
-        ud_lookup_matching(sw.rest_as_slice(), needle, ctx, false);
-    }
-    fn udf(_this: &mut Plugin, arg: &str, ctx: Context) {
-        let mut sw = SplitWhitespace::new(arg);
-        let exclude = match sw.next() {
-            Some(en) => en,
-            None => {
-                ctx.send_channel("Need needle, bro.");
-                return;
-            }
-        };
-        ud_lookup_matching(sw.rest_as_slice(), exclude, ctx, true);
+            ctx.send_channel("ENGLISH MOTHERFUCKER, DO YOU SPEAK IT?");
+        });
     }
 }
 
@@ -81,62 +101,6 @@ fn with_json<F: Fn(JsonValue)>(arg: &str, ctx: Context, fun: F) {
             ctx.send_channel(&format!("Error when uding: {}", e));
         }
     }
-}
-
-fn udlookup(arg: &str, index: usize, ctx: Context) {
-    with_json(arg, ctx, |json| {
-        let entry = &json["list"][index];
-        match entry["definition"].as_str() {
-            Some(def) => display_def(
-                &format!("{}: {}", entry["word"].as_str().unwrap_or("?"), def),
-                entry["example"].as_str(),
-                arg,
-                ctx,
-            ),
-            None => {
-                ctx.send_channel("ENGLISH, MOTHERFUCKER.");
-                return;
-            }
-        };
-    });
-}
-
-fn ud_lookup_matching(arg: &str, needle: &str, ctx: Context, invert: bool) {
-    with_json(arg, ctx, |json| {
-        let entries = &json["list"];
-        let mut itered_through = 0;
-        for v in entries.members() {
-            if let Some(def) = v["definition"].as_str() {
-                let mut matches = def.to_lowercase().contains(&needle.to_lowercase());
-                if !matches {
-                    if let Some(example) = v["example"].as_str() {
-                        matches = example.to_lowercase().contains(&needle.to_lowercase());
-                    }
-                }
-                if (!invert && matches) || (invert && !matches) {
-                    display_def(
-                        &format!("{}: {}", v["word"].as_str().unwrap_or("?"), def),
-                        v["example"].as_str(),
-                        arg,
-                        ctx,
-                    );
-                    return;
-                }
-            }
-            itered_through += 1;
-        }
-        if !invert {
-            ctx.send_channel(&format!(
-                "None of the {} entries contained {}.",
-                itered_through, needle
-            ));
-        } else {
-            ctx.send_channel(&format!(
-                "Every single entry out of {} contained {}.",
-                itered_through, needle
-            ));
-        };
-    })
 }
 
 fn display_def(mut def: &str, example: Option<&str>, arg: &str, ctx: Context) {
@@ -169,10 +133,22 @@ impl Plugin for UdPlugin {
         UdPlugin
     }
     fn register(&self, meta: &mut PluginMeta) {
-        meta.command("ud", "Urban dictionary lookup", Self::ud);
-        meta.command("udn", "Urban dictionary lookup (entry n)", Self::udn);
-        meta.command("udc", "Search urban haystack for needle", Self::udc);
-        meta.command("udf", "ud FUCK THIS SHIT", Self::udf);
+        let command = Command::new("ud", "Urban dictionary lookup", Self::ud)
+            .opt('n', "number", "Get entry number n", true)
+            .opt(
+                'c',
+                "contains",
+                "Filter entries to those containing certain words",
+                true,
+            )
+            .opt(
+                'f',
+                "fuck",
+                "Filter entries to those lacking certain words",
+                true,
+            )
+            .opt('l', "loose", "Allow non-exact entries", false);
+        meta.add_command(command);
     }
 }
 

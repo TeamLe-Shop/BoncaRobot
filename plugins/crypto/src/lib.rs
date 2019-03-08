@@ -8,7 +8,8 @@ use plugin_api::prelude::*;
 struct CryptoPlugin;
 
 impl CryptoPlugin {
-    fn crypto(_this: &mut Plugin, arg: &str, ctx: Context) {
+    fn crypto(_this: &mut Plugin, opts: ParsedOpts, ctx: Context) {
+        let arg = &opts.free.join(" ");
         let text = match http_request_common::fetch_string_on_success(
             "https://api.coinmarketcap.com/v1/ticker/?limit=0",
             "",
@@ -27,7 +28,7 @@ impl CryptoPlugin {
             }
         };
         for entry in json.members() {
-            if entry["id"] == arg {
+            if entry["id"] == &arg[..] {
                 let price_usd_obj = &entry["price_usd"];
                 let price_usd: f64 = match price_usd_obj.as_str().unwrap_or("").parse() {
                     Ok(price) => price,
@@ -49,7 +50,7 @@ impl Plugin for CryptoPlugin {
         CryptoPlugin
     }
     fn register(&self, meta: &mut PluginMeta) {
-        meta.command(
+        meta.add_simple_command(
             "crypto",
             "Look up cryptocurrency prices or some shit",
             Self::crypto,
