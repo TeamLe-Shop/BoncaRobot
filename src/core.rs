@@ -109,6 +109,12 @@ impl Core {
                                 channel.name(),
                                 &format!("{}: {}", sender.nickname(), cmd.help),
                             );
+                            for opt in &cmd.opts {
+                                let _ = irc.privmsg(
+                                    channel.name(),
+                                    &format!("-{} --{} {}", opt.short, opt.long, opt.help),
+                                );
+                            }
                             return true;
                         }
                     }
