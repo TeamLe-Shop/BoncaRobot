@@ -106,7 +106,7 @@ fn parse_opt<'a>(
 }
 
 fn parse_free<'a>(cmdline: &'a str, parsed_opts: &mut ParsedOpts) -> Result<&'a str, ParseError> {
-    match cmdline.find('-') {
+    match cmdline.find(' ') {
         Some(pos) => {
             parsed_opts.free.push(cmdline[..pos].trim().to_owned());
             Ok(&cmdline[pos..])
